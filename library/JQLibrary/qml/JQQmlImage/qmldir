@@ -1,0 +1,5 @@
+﻿module JQQmlImage
+
+singleton JQQmlImageGlobal 1.0 JQQmlImageGlobal.qml
+
+JQQmlImage 1.0 JQQmlImage.qml
