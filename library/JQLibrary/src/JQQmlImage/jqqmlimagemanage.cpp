@@ -16,6 +16,8 @@
 #include <QDir>
 #include <QTime>
 #include <QMap>
+#include <QSharedPointer>
+#include <QMutex>
 #include <QtConcurrent>
 
 // DesayTextureFactory
@@ -26,6 +28,13 @@ struct alignas( 8 ) ImageInformationHead
     qint32 imageFormat;
     qint32 imageFileSize;
     qint64 imageLastModified;
+};
+
+struct PreloadCacheData
+{
+    QSharedPointer< QMutex > mutexForPreload_;
+    QByteArray headData;
+    QByteArray imageData;
 };
 
 class DesayTextureFactory: public QQuickTextureFactory
@@ -48,16 +57,23 @@ public:
 
         ImageInformationHead imageInformationHead;
 
-        if ( cacheData_.contains( jqicFilePath ) )
+        if ( preloadCacheDatas_.contains( jqicFilePath ) )
         {
             // 有匹配的预加载数据，直接使用预加载数据
-//            qDebug() << "mode 1:" << jqicFilePath;
 
-            const auto &dataPair = cacheData_[ jqicFilePath ];
+            const auto &preloadCacheData = preloadCacheDatas_[ jqicFilePath ];
+            auto mutex = preloadCacheData.mutexForPreload_;
+            if ( mutex )
+            {
+                // 如果已经进入了预加载列表但是实际上没有读取完，那么进行等待
 
-            memcpy( &imageInformationHead, dataPair.first.constData(), sizeof( ImageInformationHead ) );
+                mutex->lock();
+                mutex->unlock();
+            }
 
-            buffer_ = dataPair.second;
+            memcpy( &imageInformationHead, preloadCacheData.headData.constData(), sizeof( ImageInformationHead ) );
+
+            buffer_ = preloadCacheData.imageData;
             image_ = QImage(
                         ( const uchar * )buffer_.constData(),
                         imageInformationHead.imageWidth,
@@ -68,7 +84,6 @@ public:
         else if ( jqicFile.exists() && ( jqicFile.size() >= ( qint64 )sizeof( ImageInformationHead ) ) )
         {
             // 在本地发现缓存，直接加载缓存数据
-//            qDebug() << "mode 2:" << jqicFilePath;
 
             jqicFile.open( QIODevice::ReadOnly );
 
@@ -86,7 +101,6 @@ public:
         else
         {
             // 在本地没有发现图片缓存，那么重新加载图片
-//            qDebug() << "mode 3:" << jqicFilePath;
 
             QTime timeForLoad;
 
@@ -100,8 +114,8 @@ public:
                 return;
             }
 
-            // 加载很快的图片（小于5ms）不进行缓存
-            if ( loadElapsed < 5 ) { return; }
+            // 加载很快的图片（小于3ms）不进行缓存
+            if ( loadElapsed < 3 ) { return; }
 
             const auto &&jqicFileInfo = QFileInfo( jqicFilePath );
             const auto &&jqicPath = jqicFileInfo.path();
@@ -116,7 +130,7 @@ public:
             imageInformationHead.imageFileSize = jqicFileInfo.size();
             imageInformationHead.imageLastModified = jqicFileInfo.lastModified().toMSecsSinceEpoch();
 
-            // 到新线程去存储，不影响主线程
+            // 到新线程去存储缓存文件，不影响主线程
             QtConcurrent::run(
                         [
                             jqicFilePath,
@@ -155,23 +169,31 @@ public:
         return image_.size();
     }
 
-    static bool preload(const QString &jqicFilePath)
+    static void preload(const QString &jqicFilePath)
     {
-        QFile jqicFile( jqicFilePath );
+        auto &preloadCacheData = preloadCacheDatas_[ jqicFilePath ];
+        preloadCacheData.mutexForPreload_.reset( new QMutex );
+        preloadCacheData.mutexForPreload_->lock();
 
-        if ( !jqicFile.exists() || ( jqicFile.size() < ( qint64 )sizeof( ImageInformationHead ) ) )
+        // 到新线程去加载，不影响主线程
+        QtConcurrent::run( [ jqicFilePath, &preloadCacheData ]()
         {
-            return false;
-        }
+            QFile jqicFile( jqicFilePath );
 
-        jqicFile.open( QIODevice::ReadOnly );
+            if ( !jqicFile.exists() || ( jqicFile.size() < ( qint64 )sizeof( ImageInformationHead ) ) )
+            {
+                return;
+            }
 
-        auto &dataPair = cacheData_[ jqicFilePath ];
+            jqicFile.open( QIODevice::ReadOnly );
 
-        dataPair.first = jqicFile.read( sizeof( ImageInformationHead ) );
-        dataPair.second = jqicFile.readAll();
+            preloadCacheData.headData = jqicFile.read( sizeof( ImageInformationHead ) );
+            preloadCacheData.imageData = jqicFile.readAll();
 
-        return true;
+            QSharedPointer< QMutex > swap;
+            swap.swap( preloadCacheData.mutexForPreload_ );
+            swap->unlock();
+        } );
     }
 
 private:
@@ -179,10 +201,10 @@ private:
     QImage image_;
     QByteArray buffer_;
 
-    static QMap< QString, QPair< QByteArray, QByteArray > > cacheData_; // jqicFilePath -> { headData, imageData }
+    static QMap< QString, PreloadCacheData > preloadCacheDatas_; // jqicFilePath -> PreloadCacheData
 };
 
-QMap< QString, QPair< QByteArray, QByteArray > > DesayTextureFactory::cacheData_;
+QMap< QString, PreloadCacheData > DesayTextureFactory::preloadCacheDatas_;
 
 // DesayImageProvider
 class DesayImageProvider: public QQuickImageProvider
@@ -208,9 +230,9 @@ JQQmlImageManage::JQQmlImageManage()
     qmlApplicationEngine_->addImageProvider( "JQQmlImage", new DesayImageProvider );
 }
 
-bool JQQmlImageManage::preload(const QString &imageFilePath)
+void JQQmlImageManage::preload(const QString &imageFilePath)
 {
-    return DesayTextureFactory::preload( jqicFilePath( imageFilePath ) );
+    DesayTextureFactory::preload( jqicFilePath( imageFilePath ) );
 }
 
 QString JQQmlImageManage::jqicPath()

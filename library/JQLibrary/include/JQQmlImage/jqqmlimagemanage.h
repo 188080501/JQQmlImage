@@ -26,7 +26,7 @@ public:
 
     static inline QPointer< QQmlApplicationEngine > qmlApplicationEngine();
 
-    static bool preload(const QString &imageFilePath);
+    static void preload(const QString &imageFilePath);
 
     static QString jqicPath();
 

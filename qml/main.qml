@@ -35,12 +35,4 @@ Window {
             }
         }
     }
-
-//    MouseArea {
-//        anchors.fill: parent
-
-//        onClicked: {
-//            grid.destroy();
-//        }
-//    }
 }
