@@ -17,8 +17,6 @@
 
 QT *= concurrent
 
-CONFIG *= c++14
-
 INCLUDEPATH *= \
     $$PWD/include/JQQmlImage/
 

@@ -130,12 +130,15 @@ public:
             imageInformationHead.imageFileSize = jqicFileInfo.size();
             imageInformationHead.imageLastModified = jqicFileInfo.lastModified().toMSecsSinceEpoch();
 
+            const auto &&headData = QByteArray( (const char *)&imageInformationHead, sizeof( ImageInformationHead ) );
+            const auto &&imageData = QByteArray( (const char *)image_.constBits(), image_.byteCount() );
+
             // 到新线程去存储缓存文件，不影响主线程
             QtConcurrent::run(
                         [
                             jqicFilePath,
-                            headData = QByteArray( (const char *)&imageInformationHead, sizeof( ImageInformationHead ) ),
-                            imageData = QByteArray( (const char *)image_.constBits(), image_.byteCount() )
+                            headData,
+                            imageData
                         ]()
             {
                 QFile jqicFile( jqicFilePath );
@@ -171,17 +174,26 @@ public:
 
     static void preload(const QString &jqicFilePath)
     {
+        if ( !QFileInfo::exists( jqicFilePath ) ) { return; }
+
         auto &preloadCacheData = preloadCacheDatas_[ jqicFilePath ];
         preloadCacheData.mutexForPreload_.reset( new QMutex );
         preloadCacheData.mutexForPreload_->lock();
 
         // 到新线程去加载，不影响主线程
-        QtConcurrent::run( [ jqicFilePath, &preloadCacheData ]()
+        QtConcurrent::run(
+                    [
+                        jqicFilePath,
+                        &preloadCacheData
+                    ]()
         {
             QFile jqicFile( jqicFilePath );
 
             if ( !jqicFile.exists() || ( jqicFile.size() < ( qint64 )sizeof( ImageInformationHead ) ) )
             {
+                QSharedPointer< QMutex > swap;
+                swap.swap( preloadCacheData.mutexForPreload_ );
+                swap->unlock();
                 return;
             }
 
