@@ -1,0 +1,11 @@
+﻿#ifndef __JQQMLIMAGE_JQQMLIMAGEMANAGE__
+#define __JQQMLIMAGE_JQQMLIMAGEMANAGE__
+
+// .h include
+#include "jqqmlimagemanage.h"
+
+#define JQQMLIMAGE_INITIALIZE( qmlApplicationEngine ) \
+    qmlApplicationEngine.addImportPath( ":/JQQmlImageQml/" ); \
+    JQQMLIMAGEMANAGE_INITIALIZE( qmlApplicationEngine );
+
+#endif//__JQQMLIMAGE_JQQMLIMAGEMANAGE__

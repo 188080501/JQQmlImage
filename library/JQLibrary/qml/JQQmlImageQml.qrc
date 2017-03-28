@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/JQQmlImageQml">
+        <file>JQQmlImage/JQQmlImage.qml</file>
+        <file>JQQmlImage/JQQmlImageGlobal.qml</file>
+        <file>JQQmlImage/qmldir</file>
+    </qresource>
+</RCC>
