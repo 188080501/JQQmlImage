@@ -9,7 +9,7 @@
     qmlRegisterType< JQQmlImageManage >( "JQQmlImageManage", 1, 0, "JQQmlImageManage" ); \
     JQQmlImageManage::setQmlApplicationEngine( &qmlApplicationEngine );
 
-#define JQQMLIMAGE_VERSION "0.0.1"
+#define JQQMLIMAGE_VERSION "0.0.2"
 
 class QQuickWindow;
 class QQmlApplicationEngine;
@@ -28,7 +28,9 @@ public:
 
     static inline QPointer< QQmlApplicationEngine > qmlApplicationEngine();
 
-    static void preload(const QString &imageFilePath);
+    static bool preload(const QString &imageFilePath);
+
+    static bool clearAllCache();
 
     static QString jqicPath();
 

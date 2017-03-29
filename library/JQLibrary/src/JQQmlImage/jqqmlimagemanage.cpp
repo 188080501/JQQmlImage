@@ -20,7 +20,6 @@
 #include <QMutex>
 #include <QtConcurrent>
 
-// DesayTextureFactory
 struct alignas( 8 ) ImageInformationHead
 {
     qint32 imageWidth;
@@ -32,11 +31,12 @@ struct alignas( 8 ) ImageInformationHead
 
 struct PreloadCacheData
 {
-    QSharedPointer< QMutex > mutexForPreload_;
+    QSharedPointer< QMutex > mutexForPreload_; // 预读取的时候会lock，读取完毕立即unlock和释放这个mutex
     QByteArray headData;
     QByteArray imageData;
 };
 
+// DesayTextureFactory
 class DesayTextureFactory: public QQuickTextureFactory
 {
 public:
@@ -87,8 +87,7 @@ public:
 
             jqicFile.open( QIODevice::ReadOnly );
 
-            const auto &&headData = jqicFile.read( sizeof( ImageInformationHead ) );
-            memcpy( &imageInformationHead, headData.constData(), sizeof( ImageInformationHead ) );
+            jqicFile.read( (char *)&imageInformationHead, sizeof( ImageInformationHead ) );
 
             buffer_ = jqicFile.readAll();
             image_ = QImage(
@@ -154,8 +153,7 @@ public:
         }
     }
 
-    ~DesayTextureFactory()
-    { }
+    ~DesayTextureFactory() = default;
 
     QSGTexture *createTexture(QQuickWindow *window) const
     {
@@ -172,9 +170,9 @@ public:
         return image_.size();
     }
 
-    static void preload(const QString &jqicFilePath)
+    static bool preload(const QString &jqicFilePath)
     {
-        if ( !QFileInfo::exists( jqicFilePath ) ) { return; }
+        if ( !QFileInfo::exists( jqicFilePath ) ) { return false; }
 
         auto &preloadCacheData = preloadCacheDatas_[ jqicFilePath ];
         preloadCacheData.mutexForPreload_.reset( new QMutex );
@@ -191,9 +189,8 @@ public:
 
             if ( !jqicFile.exists() || ( jqicFile.size() < ( qint64 )sizeof( ImageInformationHead ) ) )
             {
-                QSharedPointer< QMutex > swap;
-                swap.swap( preloadCacheData.mutexForPreload_ );
-                swap->unlock();
+                preloadCacheData.mutexForPreload_->unlock();
+                preloadCacheData.mutexForPreload_.clear();
                 return;
             }
 
@@ -202,18 +199,19 @@ public:
             preloadCacheData.headData = jqicFile.read( sizeof( ImageInformationHead ) );
             preloadCacheData.imageData = jqicFile.readAll();
 
-            QSharedPointer< QMutex > swap;
-            swap.swap( preloadCacheData.mutexForPreload_ );
-            swap->unlock();
+            preloadCacheData.mutexForPreload_->unlock();
+            preloadCacheData.mutexForPreload_.clear();
         } );
+
+        return true;
     }
 
 private:
+    static QMap< QString, PreloadCacheData > preloadCacheDatas_; // jqicFilePath -> PreloadCacheData; 预读取数据的容器
+
     QString id_;
     QImage image_;
     QByteArray buffer_;
-
-    static QMap< QString, PreloadCacheData > preloadCacheDatas_; // jqicFilePath -> PreloadCacheData
 };
 
 QMap< QString, PreloadCacheData > DesayTextureFactory::preloadCacheDatas_;
@@ -242,15 +240,26 @@ JQQmlImageManage::JQQmlImageManage()
     qmlApplicationEngine_->addImageProvider( "JQQmlImage", new DesayImageProvider );
 }
 
-void JQQmlImageManage::preload(const QString &imageFilePath)
+bool JQQmlImageManage::preload(const QString &imageFilePath)
 {
-    DesayTextureFactory::preload( jqicFilePath( imageFilePath ) );
+    return DesayTextureFactory::preload( jqicFilePath( imageFilePath ) );
+}
+
+bool JQQmlImageManage::clearAllCache()
+{
+    return QDir( jqicPath() ).removeRecursively();
 }
 
 QString JQQmlImageManage::jqicPath()
 {
-    return QString( "%1/jqqmlimagecache" ).
-            arg( QStandardPaths::writableLocation( QStandardPaths::CacheLocation ) );
+    const auto &&cacheLocation = QStandardPaths::writableLocation( QStandardPaths::CacheLocation );
+    if ( cacheLocation.isEmpty() )
+    {
+        qDebug() << "JQQmlImageManage::jqicPath: error, CacheLocation is empty";
+        return { };
+    }
+
+    return QString( "%1/jqqmlimagecache" ).arg( cacheLocation );
 }
 
 QString JQQmlImageManage::jqicFilePath(const QString &imageFilePath)
