@@ -45,14 +45,26 @@ public:
     {
         if ( id.isEmpty() ) { return; }
 
-        const auto &&localFilePath = QUrl( id ).toLocalFile();
-        if ( localFilePath.isEmpty() )
+//        qDebug() << id;
+
+        QString imageFilePath;
+
+        if ( id.startsWith( "qrc:/" ) )
+        {
+            imageFilePath = ":";
+            imageFilePath += id.mid( 5 );
+        }
+        else if ( id.startsWith( "file:/" ) )
+        {
+            imageFilePath = QUrl( id ).toLocalFile();
+        }
+        if ( imageFilePath.isEmpty() )
         {
             qDebug() << "DesayTextureFactory::DesayTextureFactory: id error:" << id;
             return;
         }
 
-        const auto &&jqicFilePath = JQQmlImageManage::jqicFilePath( QUrl( id ).toLocalFile() );
+        const auto &&jqicFilePath = JQQmlImageManage::jqicFilePath( imageFilePath );
         QFile jqicFile( jqicFilePath );
 
         ImageInformationHead imageInformationHead;
@@ -104,12 +116,12 @@ public:
             QTime timeForLoad;
 
             timeForLoad.start();
-            image_.load( localFilePath );
+            image_.load( imageFilePath );
             const auto &&loadElapsed = timeForLoad.elapsed();
 
             if ( image_.isNull() )
             {
-                qDebug() << "DesayTextureFactory::DesayTextureFactory: load error:" << localFilePath;
+                qDebug() << "DesayTextureFactory::DesayTextureFactory: load error:" << imageFilePath;
                 return;
             }
 

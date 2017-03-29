@@ -2,6 +2,7 @@
 import QtQuick.Window 2.2
 import JQQmlImage 1.0
 
+// 从qrc加载qml时用的main
 Window {
     visible: true
     width: 800
@@ -11,11 +12,11 @@ Window {
     Grid {
         id: grid
 
+        // 根据绝对路径加载4个本地png图片
         Repeater {
             model: 4
 
             JQQmlImage {
-                id: image1
                 width: 200
                 height: 200
                 cacheImageSource: "file:///Users/jason/Desktop/JQQmlImage/testimages/test" + ( index + 1 ).toString() + ".png"
@@ -23,16 +24,24 @@ Window {
             }
         }
 
+        // 根据绝对路径加载3个本地jpg图片
         Repeater {
-            model: 4
+            model: 3
 
             JQQmlImage {
-                id: image2
                 width: 200
                 height: 200
                 cacheImageSource: "file:///Users/jason/Desktop/JQQmlImage/testimages/test" + ( index + 1 ).toString() + ".jpg"
                 cache: false
             }
+        }
+
+        // 加载1个qrc中的jpg图片
+        JQQmlImage {
+            width: 200
+            height: 200
+            cacheImageSource: "qrc:/testimages/test4.jpg"
+            cache: false
         }
     }
 }
