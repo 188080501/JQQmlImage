@@ -4,6 +4,7 @@
 // Qt lib import
 #include <QDebug>
 #include <QQmlApplicationEngine>
+#include <QQuickView>
 #include <QQuickWindow>
 #include <QQuickImageProvider>
 #include <QQuickTextureFactory>
@@ -25,6 +26,7 @@ struct alignas( 8 ) ImageInformationHead
     qint32 imageWidth;
     qint32 imageHeight;
     qint32 imageFormat;
+    qint32 imageColorCount;
     qint32 imageFileSize;
     qint64 imageLastModified;
 };
@@ -44,8 +46,6 @@ public:
         id_( id )
     {
         if ( id.isEmpty() ) { return; }
-
-//        qDebug() << id;
 
         QString imageFilePath;
 
@@ -108,6 +108,7 @@ public:
                         imageInformationHead.imageHeight,
                         ( QImage::Format )imageInformationHead.imageFormat
                     );
+            image_.setColorCount( imageInformationHead.imageColorCount );
         }
         else
         {
@@ -125,8 +126,24 @@ public:
                 return;
             }
 
-            // 加载很快的图片（小于3ms）不进行缓存
+            // 加载很快的图片不进行缓存
             if ( loadElapsed < 3 ) { return; }
+
+            // 内容过少的图片不进行缓存
+            if ( image_.byteCount() <= ( 40 * 40 * 4 ) ) { return; }
+
+            if ( ( image_.format() == QImage::Format_Mono ) ||
+                 ( image_.format() == QImage::Format_Indexed8 ))
+            {
+                if ( image_.hasAlphaChannel() )
+                {
+                    image_ = image_.convertToFormat( QImage::Format_ARGB32 );
+                }
+                else
+                {
+                    image_ = image_.convertToFormat( QImage::Format_RGB888 );
+                }
+            }
 
             const auto &&jqicFileInfo = QFileInfo( jqicFilePath );
             const auto &&jqicPath = jqicFileInfo.path();
@@ -138,6 +155,7 @@ public:
             imageInformationHead.imageWidth = image_.width();
             imageInformationHead.imageHeight = image_.height();
             imageInformationHead.imageFormat = image_.format();
+            imageInformationHead.imageColorCount = image_.colorCount();
             imageInformationHead.imageFileSize = jqicFileInfo.size();
             imageInformationHead.imageLastModified = jqicFileInfo.lastModified().toMSecsSinceEpoch();
 
@@ -246,10 +264,34 @@ public:
 
 // JQQmlImageManage
 QPointer< QQmlApplicationEngine > JQQmlImageManage::qmlApplicationEngine_;
+QPointer< QQuickView > JQQmlImageManage::quickView_;
 
 JQQmlImageManage::JQQmlImageManage()
 {
-    qmlApplicationEngine_->addImageProvider( "JQQmlImage", new DesayImageProvider );
+    if ( !qmlApplicationEngine_.isNull() )
+    {
+        qmlApplicationEngine_->addImageProvider( "JQQmlImage", new DesayImageProvider );
+    }
+    else if ( !quickView_.isNull() )
+    {
+        quickView_->engine()->addImageProvider( "JQQmlImage", new DesayImageProvider );
+    }
+    else
+    {
+        qDebug() << "JQQmlImageManage::JQQmlImageManage: error";
+    }
+}
+
+void JQQmlImageManage::initialize(QQmlApplicationEngine *qmlApplicationEngine)
+{
+    qmlApplicationEngine->addImportPath( ":/JQQmlImageQml/" );
+    qmlApplicationEngine_ = qmlApplicationEngine;
+}
+
+void JQQmlImageManage::initialize(QQuickView *quickView)
+{
+    quickView->engine()->addImportPath( ":/JQQmlImageQml/" );
+    quickView_ = quickView;
 }
 
 bool JQQmlImageManage::preload(const QString &imageFilePath)
@@ -282,6 +324,7 @@ QString JQQmlImageManage::jqicFilePath(const QString &imageFilePath)
     QByteArray sumString;
 
     sumString += imageFilePath;
+    sumString += "|";
     sumString += QByteArray::number( imageFileInfo.lastModified().toMSecsSinceEpoch() );
 
     const auto &&md5String = QCryptographicHash::hash( sumString, QCryptographicHash::Md5 ).toHex();

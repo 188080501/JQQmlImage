@@ -5,14 +5,15 @@
 #include <QObject>
 #include <QPointer>
 
-#define JQQMLIMAGEMANAGE_INITIALIZE( qmlApplicationEngine ) \
+#define JQQMLIMAGEMANAGE_INITIALIZE( carrier ) \
     qmlRegisterType< JQQmlImageManage >( "JQQmlImageManage", 1, 0, "JQQmlImageManage" ); \
-    JQQmlImageManage::setQmlApplicationEngine( &qmlApplicationEngine );
+    JQQmlImageManage::initialize( &carrier );
 
-#define JQQMLIMAGE_VERSION "0.0.4"
+#define JQQMLIMAGE_VERSION "0.0.5"
 
 class QQuickWindow;
 class QQmlApplicationEngine;
+class QQuickView;
 
 class JQQmlImageManage: public QObject
 {
@@ -24,9 +25,9 @@ public:
 
     ~JQQmlImageManage() = default;
 
-    static inline void setQmlApplicationEngine(const QPointer< QQmlApplicationEngine > &qmlApplicationEngine);
+    static void initialize(QQmlApplicationEngine *qmlApplicationEngine);
 
-    static inline QPointer< QQmlApplicationEngine > qmlApplicationEngine();
+    static void initialize(QQuickView *quickView);
 
     static bool preload(const QString &imageFilePath);
 
@@ -38,6 +39,7 @@ public:
 
 private:
     static QPointer< QQmlApplicationEngine > qmlApplicationEngine_;
+    static QPointer< QQuickView > quickView_;
 };
 
 // .inc include
