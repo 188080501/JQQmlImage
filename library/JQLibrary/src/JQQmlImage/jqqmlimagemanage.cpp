@@ -4,6 +4,7 @@
 // Qt lib import
 #include <QDebug>
 #include <QQmlApplicationEngine>
+#include <QQuickView>
 #include <QQuickWindow>
 #include <QQuickImageProvider>
 #include <QQuickTextureFactory>
@@ -246,10 +247,34 @@ public:
 
 // JQQmlImageManage
 QPointer< QQmlApplicationEngine > JQQmlImageManage::qmlApplicationEngine_;
+QPointer< QQuickView > JQQmlImageManage::quickView_;
 
 JQQmlImageManage::JQQmlImageManage()
 {
-    qmlApplicationEngine_->addImageProvider( "JQQmlImage", new DesayImageProvider );
+    if ( !qmlApplicationEngine_.isNull() )
+    {
+        qmlApplicationEngine_->addImageProvider( "JQQmlImage", new DesayImageProvider );
+    }
+    else if ( !quickView_.isNull() )
+    {
+        quickView_->engine()->addImageProvider( "JQQmlImage", new DesayImageProvider );
+    }
+    else
+    {
+        qDebug() << "JQQmlImageManage::JQQmlImageManage: error";
+    }
+}
+
+void JQQmlImageManage::initialize(QQmlApplicationEngine *qmlApplicationEngine)
+{
+    qmlApplicationEngine->addImportPath( ":/JQQmlImageQml/" );
+    qmlApplicationEngine_ = qmlApplicationEngine;
+}
+
+void JQQmlImageManage::initialize(QQuickView *quickView)
+{
+    quickView->engine()->addImportPath( ":/JQQmlImageQml/" );
+    quickView_ = quickView;
 }
 
 bool JQQmlImageManage::preload(const QString &imageFilePath)

@@ -4,8 +4,7 @@
 // .h include
 #include "jqqmlimagemanage.h"
 
-#define JQQMLIMAGE_INITIALIZE( qmlApplicationEngine ) \
-    qmlApplicationEngine.addImportPath( ":/JQQmlImageQml/" ); \
-    JQQMLIMAGEMANAGE_INITIALIZE( qmlApplicationEngine );
+#define JQQMLIMAGE_INITIALIZE( carrier ) \
+    JQQMLIMAGEMANAGE_INITIALIZE( carrier );
 
 #endif//__JQQMLIMAGE_JQQMLIMAGEMANAGE__

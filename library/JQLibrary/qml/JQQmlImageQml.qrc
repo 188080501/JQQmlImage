@@ -3,5 +3,6 @@
         <file>JQQmlImage/JQQmlImage.qml</file>
         <file>JQQmlImage/JQQmlImageGlobal.qml</file>
         <file>JQQmlImage/qmldir</file>
+        <file>JQQmlImage/JQQmlBorderImage.qml</file>
     </qresource>
 </RCC>
