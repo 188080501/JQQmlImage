@@ -51,7 +51,7 @@ public:
 
         if ( id.startsWith( "qrc:/" ) )
         {
-            imageFilePath = ":";
+            imageFilePath = ":/";
             imageFilePath += id.mid( 5 );
         }
         else if ( id.startsWith( "file:/" ) )
