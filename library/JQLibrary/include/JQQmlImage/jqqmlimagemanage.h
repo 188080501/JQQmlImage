@@ -9,7 +9,7 @@
     qmlRegisterType< JQQmlImageManage >( "JQQmlImageManage", 1, 0, "JQQmlImageManage" ); \
     JQQmlImageManage::setQmlApplicationEngine( &qmlApplicationEngine );
 
-#define JQQMLIMAGE_VERSION "0.0.2"
+#define JQQMLIMAGE_VERSION "0.0.3"
 
 class QQuickWindow;
 class QQmlApplicationEngine;
