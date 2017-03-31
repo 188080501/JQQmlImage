@@ -21,7 +21,9 @@
 #include <QMutex>
 #include <QtConcurrent>
 
-struct alignas( 8 ) ImageInformationHead
+#pragma pack(push)
+#pragma pack(8)
+struct ImageInformationHead
 {
     qint32 imageWidth;
     qint32 imageHeight;
@@ -30,6 +32,7 @@ struct alignas( 8 ) ImageInformationHead
     qint32 imageFileSize;
     qint64 imageLastModified;
 };
+#pragma pack(pop)
 
 struct PreloadCacheData
 {
