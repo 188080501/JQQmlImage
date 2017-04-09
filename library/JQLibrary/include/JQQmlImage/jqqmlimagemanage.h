@@ -9,7 +9,7 @@
     qmlRegisterType< JQQmlImageManage >( "JQQmlImageManage", 1, 0, "JQQmlImageManage" ); \
     JQQmlImageManage::initialize( &carrier );
 
-#define JQQMLIMAGE_VERSION "0.0.6"
+#define JQQMLIMAGE_VERSION "0.0.7"
 
 class QQuickWindow;
 class QQmlApplicationEngine;
