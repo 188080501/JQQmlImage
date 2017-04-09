@@ -41,11 +41,23 @@ struct PreloadCacheData
     QByteArray imageData;
 };
 
-// DesayTextureFactory
-class DesayTextureFactory: public QQuickTextureFactory
+// PreloadHelper
+class AutoPreloadHelper
 {
 public:
-    DesayTextureFactory(const QString &id):
+    AutoPreloadHelper()
+    {
+//        qDebug() << "AutoPreloadHelper";
+    }
+
+    ~AutoPreloadHelper() = default;
+} preloadHelper;
+
+// JQQmlImageTextureFactory
+class JQQmlImageTextureFactory: public QQuickTextureFactory
+{
+public:
+    JQQmlImageTextureFactory(const QString &id):
         id_( id )
     {
         if ( id.isEmpty() ) { return; }
@@ -63,7 +75,7 @@ public:
         }
         if ( imageFilePath.isEmpty() )
         {
-            qDebug() << "DesayTextureFactory::DesayTextureFactory: id error:" << id;
+            qDebug() << "JQQmlImageTextureFactory::JQQmlImageTextureFactory: id error:" << id;
             return;
         }
 
@@ -125,7 +137,7 @@ public:
 
             if ( image_.isNull() )
             {
-                qDebug() << "DesayTextureFactory::DesayTextureFactory: load error:" << imageFilePath;
+                qDebug() << "JQQmlImageTextureFactory::JQQmlImageTextureFactory: load error:" << imageFilePath;
                 return;
             }
 
@@ -186,7 +198,7 @@ public:
         }
     }
 
-    ~DesayTextureFactory() = default;
+    ~JQQmlImageTextureFactory() = default;
 
     QSGTexture *createTexture(QQuickWindow *window) const
     {
@@ -247,21 +259,21 @@ private:
     QByteArray buffer_;
 };
 
-QMap< QString, PreloadCacheData > DesayTextureFactory::preloadCacheDatas_;
+QMap< QString, PreloadCacheData > JQQmlImageTextureFactory::preloadCacheDatas_;
 
-// DesayImageProvider
-class DesayImageProvider: public QQuickImageProvider
+// JQQmlImageImageProvider
+class JQQmlImageImageProvider: public QQuickImageProvider
 {
 public:
-    DesayImageProvider():
+    JQQmlImageImageProvider():
         QQuickImageProvider( QQmlImageProviderBase::Texture )
     { }
 
-    ~DesayImageProvider() = default;
+    ~JQQmlImageImageProvider() = default;
 
     QQuickTextureFactory *requestTexture(const QString &id, QSize *, const QSize &)
     {
-        return new DesayTextureFactory( id );
+        return new JQQmlImageTextureFactory( id );
     }
 };
 
@@ -273,11 +285,11 @@ JQQmlImageManage::JQQmlImageManage()
 {
     if ( !qmlApplicationEngine_.isNull() )
     {
-        qmlApplicationEngine_->addImageProvider( "JQQmlImage", new DesayImageProvider );
+        qmlApplicationEngine_->addImageProvider( "JQQmlImage", new JQQmlImageImageProvider );
     }
     else if ( !quickView_.isNull() )
     {
-        quickView_->engine()->addImageProvider( "JQQmlImage", new DesayImageProvider );
+        quickView_->engine()->addImageProvider( "JQQmlImage", new JQQmlImageImageProvider );
     }
     else
     {
@@ -299,7 +311,7 @@ void JQQmlImageManage::initialize(QQuickView *quickView)
 
 bool JQQmlImageManage::preload(const QString &imageFilePath)
 {
-    return DesayTextureFactory::preload( jqicFilePath( imageFilePath ) );
+    return JQQmlImageTextureFactory::preload( jqicFilePath( imageFilePath ) );
 }
 
 bool JQQmlImageManage::clearAllCache()
