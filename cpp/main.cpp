@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
 
     // 对特定图片预加载，进一步提升加载速度，后期要改成自动预加载
     // 加载在单独的线程进行，不影响主线程执行
+    // 库会自动的预加载程序上一次运行时的前10个用到的图片
     JQQmlImageManage::preload( "/Users/jason/Desktop/JQQmlImage/testimages/test3.png" );
     JQQmlImageManage::preload( "/Users/jason/Desktop/JQQmlImage/testimages/test3.jpg" );
 
