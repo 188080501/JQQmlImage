@@ -3,17 +3,21 @@
 
 // Qt lib import
 #include <QObject>
+#include <QSharedPointer>
 #include <QPointer>
 
 #define JQQMLIMAGEMANAGE_INITIALIZE( carrier ) \
     qmlRegisterType< JQQmlImageManage >( "JQQmlImageManage", 1, 0, "JQQmlImageManage" ); \
-    JQQmlImageManage::initialize( &carrier );
+    JQQmlImageManage::initialize( &carrier ); \
+    JQQmlImageManage::autoPreload();
 
-#define JQQMLIMAGE_VERSION "0.0.7"
+#define JQQMLIMAGE_VERSION "0.0.8"
 
 class QQuickWindow;
 class QQmlApplicationEngine;
 class QQuickView;
+class QMutex;
+class QFile;
 
 class JQQmlImageManage: public QObject
 {
@@ -23,7 +27,9 @@ class JQQmlImageManage: public QObject
 public:
     JQQmlImageManage();
 
-    ~JQQmlImageManage() = default;
+    ~JQQmlImageManage();
+
+    inline static QPointer< JQQmlImageManage > jqQmlImageManage();
 
     static void initialize(QQmlApplicationEngine *qmlApplicationEngine);
 
@@ -31,15 +37,30 @@ public:
 
     static bool preload(const QString &imageFilePath);
 
+    static void autoPreload();
+
     static bool clearAllCache();
 
     static QString jqicPath();
 
     static QString jqicFilePath(const QString &imageFilePath);
 
+    void recordImageFilePath(const QString &imageFilePath);
+
+private:
+    static void saveAutoPreloadImageFileListToFile(const QStringList &imageFilePathList);
+
+    static QStringList readAutoPreloadImageFileListToFile();
+
+    static QSharedPointer< QFile > autoPreloadImageFile();
+
 private:
     static QPointer< QQmlApplicationEngine > qmlApplicationEngine_;
     static QPointer< QQuickView > quickView_;
+    static QPointer< JQQmlImageManage > jqQmlImageManage_;
+
+    QSharedPointer< QMutex > mutexForAutoPreloadImage_;
+    QSharedPointer< QStringList > listForAutoPreloadImage_;
 };
 
 // .inc include
