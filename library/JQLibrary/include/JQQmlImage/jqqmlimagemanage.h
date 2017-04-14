@@ -11,7 +11,7 @@
     JQQmlImageManage::initialize( &carrier ); \
     JQQmlImageManage::autoPreload();
 
-#define JQQMLIMAGE_VERSION "0.0.8"
+#define JQQMLIMAGE_VERSION "0.0.9"
 
 class QQuickWindow;
 class QQmlApplicationEngine;

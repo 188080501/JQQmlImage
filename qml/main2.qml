@@ -1,4 +1,4 @@
-﻿import QtQuick 2.8
+﻿import QtQuick 2.6
 import QtQuick.Window 2.2
 import JQQmlImage 1.0
 
