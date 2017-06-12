@@ -5,6 +5,7 @@ QT += qml quick
 CONFIG += c++11
 
 include( $$PWD/library/JQLibrary/JQLibrary.pri )
+include( $$PWD/library/JQLibrary/JQQmlImage.pri )
 
 SOURCES += \
     $$PWD/cpp/main.cpp
