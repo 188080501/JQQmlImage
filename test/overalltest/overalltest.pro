@@ -15,20 +15,14 @@
 #   http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 #
 
+QT += core testlib qml quick
+
 TEMPLATE = app
-
-QT += qml quick
-
-CONFIG += c++11
 
 include( $$PWD/../../sharedlibrary/JQLibrary/JQQmlImage.pri )
 
+HEADERS *= \
+    $$PWD/cpp/*.h
+
 SOURCES *= \
     $$PWD/cpp/*.cpp
-
-RESOURCES += \
-    $$PWD/qml/*.qrc \
-    $$PWD/../../testimages/testimages.qrc
-
-OTHER_FILES += \
-    $$PWD/qml/main2.qml

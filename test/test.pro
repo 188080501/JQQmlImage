@@ -15,20 +15,7 @@
 #   http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html.
 #
 
-TEMPLATE = app
+TEMPLATE = subdirs
 
-QT += qml quick
-
-CONFIG += c++11
-
-include( $$PWD/../../sharedlibrary/JQLibrary/JQQmlImage.pri )
-
-SOURCES *= \
-    $$PWD/cpp/*.cpp
-
-RESOURCES += \
-    $$PWD/qml/*.qrc \
-    $$PWD/../../testimages/testimages.qrc
-
-OTHER_FILES += \
-    $$PWD/qml/main2.qml
+SUBDIRS += overalltest
+SUBDIRS += benchmark
