@@ -22,7 +22,9 @@ public:
     void cleanupTestCase();
 
 private slots:
-    void test1();
+    void dataIntegrity();
+
+    void dataIntegrity_data();
 };
 
 #endif//CPP_JQQMLIMAGE_OVERALLTEST_H_

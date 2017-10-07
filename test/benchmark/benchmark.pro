@@ -26,3 +26,5 @@ HEADERS *= \
 
 SOURCES *= \
     $$PWD/cpp/*.cpp
+
+DEFINES *= TESTIMAGES_PATH=\\\"$$PWD/../../testimages\\\"

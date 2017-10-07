@@ -22,6 +22,8 @@
 #include <QObject>
 #include <QSharedPointer>
 #include <QPointer>
+#include <QImage>
+#include <QColor>
 
 #define JQQMLIMAGEMANAGE_INITIALIZE( carrier ) \
     qmlRegisterType< JQQmlImageManage >( "JQQmlImageManage", 1, 0, "JQQmlImageManage" ); \
@@ -44,12 +46,15 @@ struct JQQmlImageInformationHead
     qint32 imageHeight = 0;
     qint32 imageFormat = 0;
     qint32 imageColorCount = 0;
+    bool byteIsOrdered = false;
 
     bool imageHaveBackgroundColor = false;
     quint32 imageBackgroundColor = 0;
+    qint32 imageBackgroundColorSegmentCount = 0;
 
     bool imageHavePrimaryColor = false;
     quint32 imagePrimaryColor = 0;
+    qint32 imagePrimaryColorSegmentCount = 0;
 };
 #pragma pack(pop)
 
@@ -81,11 +86,19 @@ public:
 
     static QPair< JQQmlImageInformationHead, QByteArray > imageToJqicData(const QImage &image);
 
-    static int sameColorDetector(const QImage &image, const int &colorIndex);
+    static QImage jqicDataToImage(const JQQmlImageInformationHead &head, const QByteArray &data);
 
     void recordImageFilePath(const QString &imageFilePath);
 
 private:
+    inline static QColor uint32ToColor(const quint32 &color);
+
+    inline static quint32 colorToUint32(const QColor &color);
+
+    inline static qint32 getBitIndexFromColorIndex(const QImage &image, const qint32 &colorIndex, const bool &byteIsOrdered);
+
+    static qint32 sameColorDetector(const QImage &image, const qint32 &colorIndexStart, const bool &byteIsOrdered);
+
     static void saveAutoPreloadImageFileListToFile(const QStringList &imageFilePathList);
 
     static QStringList readAutoPreloadImageFileListToFile();

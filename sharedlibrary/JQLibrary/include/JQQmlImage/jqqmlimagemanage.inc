@@ -26,4 +26,40 @@ inline QPointer< JQQmlImageManage > JQQmlImageManage::jqQmlImageManage()
     return jqQmlImageManage_;
 }
 
+inline QColor JQQmlImageManage::uint32ToColor(const quint32 &color)
+{
+    return QColor(
+                *( reinterpret_cast< const quint8 * >( &color ) + 0 ),
+                *( reinterpret_cast< const quint8 * >( &color ) + 1 ),
+                *( reinterpret_cast< const quint8 * >( &color ) + 2 ),
+                *( reinterpret_cast< const quint8 * >( &color ) + 3 )
+                );
+}
+
+inline quint32 JQQmlImageManage::colorToUint32(const QColor &color)
+{
+    quint32 result;
+
+    *( reinterpret_cast< quint8 * >( &result ) + 0 ) = static_cast< quint8 >( color.blue() );
+    *( reinterpret_cast< quint8 * >( &result ) + 1 ) = static_cast< quint8 >( color.green() );
+    *( reinterpret_cast< quint8 * >( &result ) + 2 ) = static_cast< quint8 >( color.red() );
+    *( reinterpret_cast< quint8 * >( &result ) + 3 ) = static_cast< quint8 >( color.alpha() );
+
+    return result;
+}
+
+inline qint32 JQQmlImageManage::getBitIndexFromColorIndex(const QImage &image, const qint32 &colorIndex, const bool &byteIsOrdered)
+{
+    const auto &&pixelByte = ( image.format() == QImage::Format_ARGB32 ) ? ( 4 ) : ( 3 );
+
+    if ( byteIsOrdered )
+    {
+        return colorIndex * pixelByte;
+    }
+    else
+    {
+        return colorIndex * pixelByte + ( ( colorIndex / image.width() ) * ( image.width() % 4 ) );
+    }
+}
+
 #endif//JQQMLIMAGE_JQQMLIMAGEMANAGE_INC_
