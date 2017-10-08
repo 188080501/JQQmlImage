@@ -1,8 +1,14 @@
 ﻿#ifndef CPP_JQQMLIMAGE_BENCHMARK_H_
 #define CPP_JQQMLIMAGE_BENCHMARK_H_
 
+// C++ lib import
+#include <set>
+
 // Qt lib import
 #include <QObject>
+
+//#define PRIVATEMACRO public
+#define PRIVATEMACRO private
 
 class JQQmlImageBenchmark: public QObject
 {
@@ -14,7 +20,17 @@ public:
 
     ~JQQmlImageBenchmark() = default;
 
-    void test1();
+PRIVATEMACRO slots:
+    void initTestCase();
+
+    void cleanupTestCase();
+
+    void decodeBenchmark();
+
+    void decodeBenchmark_data();
+
+private:
+    std::set< double > decodeResults_;
 };
 
 #endif//CPP_JQQMLIMAGE_BENCHMARK_H_

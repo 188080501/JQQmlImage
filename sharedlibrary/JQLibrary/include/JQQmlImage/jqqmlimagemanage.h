@@ -48,13 +48,13 @@ struct JQQmlImageInformationHead
     qint32 imageColorCount = 0;
     bool byteIsOrdered = false;
 
-    bool imageHaveBackgroundColor = false;
-    quint32 imageBackgroundColor = 0;
-    qint32 imageBackgroundColorSegmentCount = 0;
+    bool imageHaveFirstPrimaryColor = false;
+    quint32 imageFirstPrimaryColor = 0;
+    qint32 imageFirstPrimaryColorSegmentCount = 0;
 
-    bool imageHavePrimaryColor = false;
-    quint32 imagePrimaryColor = 0;
-    qint32 imagePrimaryColorSegmentCount = 0;
+    bool imageHaveSecondPrimaryColor = false;
+    quint32 imageSecondPrimaryColor = 0;
+    qint32 imageSecondPrimaryColorSegmentCount = 0;
 };
 #pragma pack(pop)
 

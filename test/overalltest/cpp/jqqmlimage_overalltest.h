@@ -17,11 +17,11 @@ public:
 
     ~JQQmlImageOverallTest() = default;
 
+PRIVATEMACRO slots:
     void initTestCase();
 
     void cleanupTestCase();
 
-private slots:
     void dataIntegrity();
 
     void dataIntegrity_data();

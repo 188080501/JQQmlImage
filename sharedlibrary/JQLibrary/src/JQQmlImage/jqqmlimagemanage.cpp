@@ -429,9 +429,6 @@ QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData
         {
             for ( quint16 x = 0; x < image.width(); ++x )
             {
-//                qDebug() << image.pixelColor( x, y ) << colorToUint32( image.pixelColor( x, y ) );
-//                QThread::sleep( 1 );
-
                 ++rgbCountMap[ colorToUint32( image.pixelColor( x, y ) ) ];
             }
         }
@@ -463,15 +460,15 @@ QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData
         if ( ( rgbCountVector.size() >= 1 ) &&
            ( ( static_cast< double >( rgbCountVector[ 0 ].second ) / static_cast< double >( image.width() * image.height() ) ) > 0.1 ) )
         {
-            result.first.imageHaveBackgroundColor = true;
-            result.first.imageBackgroundColor = rgbCountVector[ 0 ].first;
+            result.first.imageHaveFirstPrimaryColor = true;
+            result.first.imageFirstPrimaryColor = rgbCountVector[ 0 ].first;
         }
 
         if ( ( rgbCountVector.size() >= 2 ) &&
            ( ( static_cast< double >( rgbCountVector[ 1 ].second ) / static_cast< double >( image.width() * image.height() ) ) > 0.1 ) )
         {
-            result.first.imageHavePrimaryColor = true;
-            result.first.imagePrimaryColor = rgbCountVector[ 1 ].first;
+            result.first.imageHaveSecondPrimaryColor = true;
+            result.first.imageSecondPrimaryColor = rgbCountVector[ 1 ].first;
         }
     }
 
@@ -483,7 +480,7 @@ QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData
     QVector< QPair< qint32, QByteArray > > argbSegments; // [ { colorIndexStart, ARGB/RGB data } ]
 
     // ARGB
-    if ( result.first.imageHaveBackgroundColor || result.first.imageHavePrimaryColor )
+    if ( result.first.imageHaveFirstPrimaryColor || result.first.imageHaveSecondPrimaryColor )
     {
         QPair< qint32, QByteArray > argbSegment = { -1, { } };
 
@@ -492,13 +489,7 @@ QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData
         {
             const auto &&currentColor = image.pixelColor( colorIndex % image.width(), colorIndex / image.width() );
 
-//            qDebug() << currentColor << uint32ToColor( result.first.imageBackgroundColor );
-//            if ( currentColor == uint32ToColor( result.first.imageBackgroundColor ) )
-//            {
-//                qDebug() << sameColorDetector( image, colorIndex, result.first.byteIsOrdered );
-//            }
-
-            if ( result.first.imageHaveBackgroundColor && ( currentColor == uint32ToColor( result.first.imageBackgroundColor ) ) && ( sameColorDetector( image, colorIndex, result.first.byteIsOrdered ) > 8 ) )
+            if ( result.first.imageHaveFirstPrimaryColor && ( currentColor == uint32ToColor( result.first.imageFirstPrimaryColor ) ) && ( sameColorDetector( image, colorIndex, result.first.byteIsOrdered ) > 8 ) )
             {
                 if ( argbSegment.first != -1 )
                 {
@@ -506,7 +497,7 @@ QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData
                     argbSegment = { -1, { } };
                 }
 
-                ++result.first.imageBackgroundColorSegmentCount;
+                ++result.first.imageFirstPrimaryColorSegmentCount;
 
                 const auto &&sameColorCount = sameColorDetector( image, colorIndex, result.first.byteIsOrdered );
                 backgroundColorByteArray.append( *( reinterpret_cast< const char * >( &colorIndex ) + 0 ) );
@@ -520,7 +511,7 @@ QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData
 
                 colorIndex += sameColorCount;
             }
-            else if ( result.first.imageHavePrimaryColor && ( currentColor == uint32ToColor( result.first.imagePrimaryColor ) ) && ( sameColorDetector( image, colorIndex, result.first.byteIsOrdered ) > 8 ) )
+            else if ( result.first.imageHaveSecondPrimaryColor && ( currentColor == uint32ToColor( result.first.imageSecondPrimaryColor ) ) && ( sameColorDetector( image, colorIndex, result.first.byteIsOrdered ) > 8 ) )
             {
                 if ( argbSegment.first != -1 )
                 {
@@ -528,7 +519,7 @@ QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData
                     argbSegment = { -1, { } };
                 }
 
-                ++result.first.imagePrimaryColorSegmentCount;
+                ++result.first.imageSecondPrimaryColorSegmentCount;
 
                 const auto &&sameColorCount = sameColorDetector( image, colorIndex, result.first.byteIsOrdered );
                 primaryColorByteArray.append( *( reinterpret_cast< const char * >( &colorIndex ) + 0 ) );
@@ -627,7 +618,7 @@ QImage JQQmlImageManage::jqicDataToImage(const JQQmlImageInformationHead &head, 
 //    qDebug() << head.imageBackgroundColor << head.imageBackgroundColorSegmentCount;
 
     // 还原背景色
-    for ( auto segmentCount = 0; segmentCount < head.imageBackgroundColorSegmentCount; ++segmentCount )
+    for ( auto segmentCount = 0; segmentCount < head.imageFirstPrimaryColorSegmentCount; ++segmentCount )
     {
         qint32 colorIndexStart;
         qint32 sameColorCount;
@@ -648,7 +639,7 @@ QImage JQQmlImageManage::jqicDataToImage(const JQQmlImageInformationHead &head, 
 
             for ( ; target < end; ++target )
             {
-                *target = head.imageBackgroundColor;
+                *target = head.imageFirstPrimaryColor;
             }
         }
         else
@@ -658,11 +649,9 @@ QImage JQQmlImageManage::jqicDataToImage(const JQQmlImageInformationHead &head, 
 
             while ( target < end )
             {
-                *( target++ ) = *( reinterpret_cast< const quint8 * >( &head.imageBackgroundColor ) + 0 );
-                *( target++ ) = *( reinterpret_cast< const quint8 * >( &head.imageBackgroundColor ) + 1 );
-                *( target++ ) = *( reinterpret_cast< const quint8 * >( &head.imageBackgroundColor ) + 2 );
-
-//                target += 3;
+                *( target++ ) = *( reinterpret_cast< const quint8 * >( &head.imageFirstPrimaryColor ) + 0 );
+                *( target++ ) = *( reinterpret_cast< const quint8 * >( &head.imageFirstPrimaryColor ) + 1 );
+                *( target++ ) = *( reinterpret_cast< const quint8 * >( &head.imageFirstPrimaryColor ) + 2 );
             }
         }
 
@@ -670,7 +659,7 @@ QImage JQQmlImageManage::jqicDataToImage(const JQQmlImageInformationHead &head, 
     }
 
     // 还原主要色
-    for ( auto segmentCount = 0; segmentCount < head.imagePrimaryColorSegmentCount; ++segmentCount )
+    for ( auto segmentCount = 0; segmentCount < head.imageSecondPrimaryColorSegmentCount; ++segmentCount )
     {
         qint32 colorIndexStart;
         qint32 sameColorCount;
@@ -691,7 +680,7 @@ QImage JQQmlImageManage::jqicDataToImage(const JQQmlImageInformationHead &head, 
 
             for ( ; target < end; ++target )
             {
-                *target = head.imagePrimaryColor;
+                *target = head.imageSecondPrimaryColor;
             }
         }
         else
@@ -701,11 +690,9 @@ QImage JQQmlImageManage::jqicDataToImage(const JQQmlImageInformationHead &head, 
 
             while ( target < end )
             {
-                *( target++ ) = *( reinterpret_cast< const quint8 * >( &head.imagePrimaryColor ) + 0 );
-                *( target++ ) = *( reinterpret_cast< const quint8 * >( &head.imagePrimaryColor ) + 1 );
-                *( target++ ) = *( reinterpret_cast< const quint8 * >( &head.imagePrimaryColor ) + 2 );
-
-//                target += 3;
+                *( target++ ) = *( reinterpret_cast< const quint8 * >( &head.imageSecondPrimaryColor ) + 0 );
+                *( target++ ) = *( reinterpret_cast< const quint8 * >( &head.imageSecondPrimaryColor ) + 1 );
+                *( target++ ) = *( reinterpret_cast< const quint8 * >( &head.imageSecondPrimaryColor ) + 2 );
             }
         }
 

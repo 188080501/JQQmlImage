@@ -9,10 +9,8 @@ int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
 
-    JQQmlImageBenchmark benchmark;
+    JQQmlImageBenchmark jqQmlImageBenchmark;
 
-    qDebug() << "----- test1 start -----";
-    benchmark.test1();
-    qDebug() << "----- test1 end -----";
+    return QTest::qExec( &jqQmlImageBenchmark, argc, argv );
 }
 
