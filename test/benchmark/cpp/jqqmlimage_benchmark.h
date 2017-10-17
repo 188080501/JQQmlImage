@@ -30,7 +30,8 @@ PRIVATEMACRO slots:
     void decodeBenchmark_data();
 
 private:
-    std::set< double > decodeResults_;
+    std::set< double > decodeTimeResults_;
+    std::set< double > decodeSizeResults_;
 };
 
 #endif//CPP_JQQMLIMAGE_BENCHMARK_H_
