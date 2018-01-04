@@ -32,3 +32,6 @@ RESOURCES *= \
 
 QML_IMPORT_PATH *= \
     $$PWD/qml
+
+OTHER_FILES *= \
+    $$PWD/qml/JQQmlImage/*.qml

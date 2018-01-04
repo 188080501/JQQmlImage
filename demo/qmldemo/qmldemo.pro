@@ -31,6 +31,7 @@ RESOURCES += \
     $$PWD/../../testimages/testimages.qrc
 
 OTHER_FILES += \
+    $$PWD/qml/main.qml \
     $$PWD/qml/main2.qml
 
 DEFINES *= MAIN2_QML_PATH=\\\"$$PWD/qml\\\"
