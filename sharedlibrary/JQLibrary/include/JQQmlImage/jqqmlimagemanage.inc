@@ -61,6 +61,11 @@ inline void JQQmlImageManage::setExtraSelectors(const QStringList &newValue)
     extraSelectors_ = newValue;
 }
 
+inline void JQQmlImageManage::setJqicPath(const QString &newValue)
+{
+    jqicPath_ = newValue;
+}
+
 inline QColor JQQmlImageManage::uint32ToColor(const quint32 &color)
 {
     return QColor(

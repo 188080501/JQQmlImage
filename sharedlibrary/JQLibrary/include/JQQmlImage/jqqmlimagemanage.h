@@ -85,6 +85,8 @@ public:
 
     static inline void setExtraSelectors(const QStringList &newValue);
 
+    static inline void setJqicPath(const QString &newValue);
+
 
     static void initialize(QQmlApplicationEngine *qmlApplicationEngine);
 
@@ -132,6 +134,7 @@ private:
     static bool cachePathIsWritable_;
     static qreal devicePixelRatio_;
     static QStringList extraSelectors_;
+    static QString jqicPath_;
 
     QSharedPointer< QMutex > preloadImageMutex_;
     QSharedPointer< QStringList > autoPreloadImageFilePathList_;

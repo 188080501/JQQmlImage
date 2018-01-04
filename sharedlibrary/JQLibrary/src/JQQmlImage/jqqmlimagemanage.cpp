@@ -319,6 +319,7 @@ bool JQQmlImageManage::enableCacheFeature_ = true;
 bool JQQmlImageManage::cachePathIsWritable_ = false;
 qreal JQQmlImageManage::devicePixelRatio_ = 1;
 QStringList JQQmlImageManage::extraSelectors_;
+QString JQQmlImageManage::jqicPath_;
 
 JQQmlImageManage::JQQmlImageManage():
     preloadImageMutex_( new QMutex ),
@@ -354,6 +355,7 @@ void JQQmlImageManage::initialize(QQmlApplicationEngine *qmlApplicationEngine)
     qmlApplicationEngine->addImportPath( ":/JQQmlImageQml/" );
     qmlApplicationEngine_ = qmlApplicationEngine;
     refreshCachePathIsWritable();
+    jqicPath();
 }
 
 void JQQmlImageManage::initialize(QQuickView *quickView)
@@ -361,6 +363,7 @@ void JQQmlImageManage::initialize(QQuickView *quickView)
     quickView->engine()->addImportPath( ":/JQQmlImageQml/" );
     quickView_ = quickView;
     refreshCachePathIsWritable();
+    jqicPath();
 }
 
 bool JQQmlImageManage::preload(const QString &imageFilePath)
@@ -385,6 +388,8 @@ bool JQQmlImageManage::clearAllCache()
 
 QString JQQmlImageManage::jqicPath()
 {
+    if ( !jqicPath_.isEmpty() ) { return jqicPath_; }
+
     if ( !qApp )
     {
         qDebug() << "JQQmlImageManage: qApp is null";
@@ -398,17 +403,17 @@ QString JQQmlImageManage::jqicPath()
         return { };
     }
 
-    const auto &&buf = QString( "%1/jqqmlimagecache" ).arg( cacheLocation );
-    if ( !QFileInfo( buf ).exists() )
+    jqicPath_ = QString( "%1/jqqmlimagecache" ).arg( cacheLocation );
+    if ( !QFileInfo( jqicPath_ ).exists() )
     {
-        if ( !QDir().mkpath( buf ) )
+        if ( !QDir().mkpath( jqicPath_ ) )
         {
-            qDebug() << "JQQmlImageManage: mkpath error:" << buf;
+            qDebug() << "JQQmlImageManage: mkpath error:" << jqicPath_;
             return { };
         }
     }
 
-    return buf;
+    return jqicPath_;
 }
 
 QString JQQmlImageManage::jqicFilePath(const QString &imageFilePath)
@@ -424,8 +429,7 @@ QString JQQmlImageManage::jqicFilePath(const QString &imageFilePath)
 
     const auto &&md5String = QCryptographicHash::hash( sumString, QCryptographicHash::Md5 ).toHex();
 
-    return QString( "%1/jqqmlimagecache/%2.jqic" ).
-            arg( QStandardPaths::writableLocation( QStandardPaths::CacheLocation ), md5String.constData() );
+    return QString( "%1/%2.jqic" ).arg( jqicPath(), md5String.constData() );
 }
 
 QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData(const QImage &image)
