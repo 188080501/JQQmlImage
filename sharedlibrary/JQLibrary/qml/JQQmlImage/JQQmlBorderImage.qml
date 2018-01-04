@@ -1,8 +1,7 @@
 ﻿import QtQuick 2.6
-import "."
+import JQQmlImage 1.0
 
 BorderImage {
-    id: image
     source: "image://JQQmlImage/" + cacheImageSource
 
     property url cacheImageSource

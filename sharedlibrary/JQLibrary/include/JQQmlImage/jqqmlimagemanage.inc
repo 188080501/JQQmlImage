@@ -26,6 +26,41 @@ inline QPointer< JQQmlImageManage > JQQmlImageManage::jqQmlImageManage()
     return jqQmlImageManage_;
 }
 
+inline bool JQQmlImageManage::enableCacheFeature()
+{
+    return enableCacheFeature_;
+}
+
+inline void JQQmlImageManage::setEnableCacheFeature(const bool &newValue)
+{
+    enableCacheFeature_ = newValue;
+}
+
+inline bool JQQmlImageManage::cachePathIsWritable()
+{
+    return cachePathIsWritable_;
+}
+
+inline qreal JQQmlImageManage::devicePixelRatio()
+{
+    return devicePixelRatio_;
+}
+
+inline void JQQmlImageManage::setDevicePixelRatio(const qreal &newValue)
+{
+    devicePixelRatio_ = newValue;
+}
+
+inline QStringList JQQmlImageManage::extraSelectors()
+{
+    return extraSelectors_;
+}
+
+inline void JQQmlImageManage::setExtraSelectors(const QStringList &newValue)
+{
+    extraSelectors_ = newValue;
+}
+
 inline QColor JQQmlImageManage::uint32ToColor(const quint32 &color)
 {
     return QColor(

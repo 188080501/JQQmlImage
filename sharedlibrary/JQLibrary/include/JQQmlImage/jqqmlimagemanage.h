@@ -30,7 +30,7 @@
     JQQmlImageManage::initialize( &carrier ); \
     JQQmlImageManage::autoPreload();
 
-#define JQQMLIMAGE_VERSION "1.0"
+#define JQQMLIMAGE_VERSION "1.1"
 
 class QQuickWindow;
 class QQmlApplicationEngine;
@@ -62,6 +62,7 @@ class JQQmlImageManage: public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY( JQQmlImageManage )
+    Q_PROPERTY( qreal devicePixelRatio READ devicePixelRatio WRITE setDevicePixelRatio )
 
 public:
     JQQmlImageManage();
@@ -69,6 +70,21 @@ public:
     ~JQQmlImageManage();
 
     inline static QPointer< JQQmlImageManage > jqQmlImageManage();
+
+    static inline bool enableCacheFeature();
+
+    static inline void setEnableCacheFeature(const bool &newValue);
+
+    static inline bool cachePathIsWritable();
+
+    static inline qreal devicePixelRatio();
+
+    static inline void setDevicePixelRatio(const qreal &newValue);
+
+    static inline QStringList extraSelectors();
+
+    static inline void setExtraSelectors(const QStringList &newValue);
+
 
     static void initialize(QQmlApplicationEngine *qmlApplicationEngine);
 
@@ -97,6 +113,8 @@ private:
 
     inline static qint32 getBitIndexFromColorIndex(const QImage &image, const qint32 &colorIndex, const bool &byteIsOrdered);
 
+    static void refreshCachePathIsWritable();
+
     static qint32 sameColorDetector(const QImage &image, const qint32 &colorIndexStart, const bool &byteIsOrdered);
 
     static void saveAutoPreloadImageFileListToFile(const QStringList &imageFilePathList);
@@ -110,8 +128,13 @@ private:
     static QPointer< QQuickView > quickView_;
     static QPointer< JQQmlImageManage > jqQmlImageManage_;
 
-    QSharedPointer< QMutex > mutexForAutoPreloadImage_;
-    QSharedPointer< QStringList > listForAutoPreloadImage_;
+    static bool enableCacheFeature_;
+    static bool cachePathIsWritable_;
+    static qreal devicePixelRatio_;
+    static QStringList extraSelectors_;
+
+    QSharedPointer< QMutex > preloadImageMutex_;
+    QSharedPointer< QStringList > autoPreloadImageFilePathList_;
 };
 
 // .inc include

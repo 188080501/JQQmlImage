@@ -17,8 +17,10 @@ Window {
             model: 4
 
             JQQmlImage {
+//            Image {
                 width: 200
                 height: 200
+//                source: "file:///Users/jason/Desktop/JQQmlImage/testimages/test" + ( index + 1 ).toString() + ".png"
                 cacheImageSource: "file:///Users/jason/Desktop/JQQmlImage/testimages/test" + ( index + 1 ).toString() + ".png"
                 cache: false
             }
@@ -31,6 +33,7 @@ Window {
             JQQmlImage {
                 width: 200
                 height: 200
+//                source: "file:///Users/jason/Desktop/JQQmlImage/testimages/test" + ( index + 1 ).toString() + ".jpg"
                 cacheImageSource: "file:///Users/jason/Desktop/JQQmlImage/testimages/test" + ( index + 1 ).toString() + ".jpg"
                 cache: false
             }

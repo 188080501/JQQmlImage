@@ -26,9 +26,8 @@
 
 struct PreloadCacheData
 {
-    QSharedPointer< QMutex > mutexForPreload_; // 预读取的时候会lock，读取完毕立即unlock和释放这个mutex
-    QByteArray headData;
-    QByteArray imageData;
+    QSharedPointer< QMutex > preloadMutex_; // 预读取的时候会lock，读取完毕立即unlock和释放这个mutex
+    QImage image;
 };
 
 // JQQmlImageTextureFactory
@@ -38,46 +37,18 @@ public:
     JQQmlImageTextureFactory(const QString &id):
         id_( id )
     {
-        if ( id.isEmpty() ) { return; }
-
-        QString imageFilePath;
-
-        // 对ID进行预处理，得到图片的file path
-        if ( !id.startsWith( ":/" ) )
-        {
-            if ( id.startsWith( "qrc:/" ) )
-            {
-                imageFilePath = ":/";
-                imageFilePath += id.mid( 5 );
-            }
-            else if ( id.startsWith( "file:/" ) )
-            {
-                imageFilePath = QUrl( id ).toLocalFile();
-            }
-            else
-            {
-                qDebug() << "JQQmlImageTextureFactory: id error(1):" << id;
-                return;
-            }
-        }
-
-        if ( imageFilePath.isEmpty() )
-        {
-            qDebug() << "JQQmlImageTextureFactory: id error(2):" << id;
-            return;
-        }
+        const auto &&imageFilePath = analysisFilePath( id );
+        if ( imageFilePath.isEmpty() ) { return; }
 
         const auto &&jqicFilePath = JQQmlImageManage::jqicFilePath( imageFilePath );
         QFile jqicFile( jqicFilePath );
-
-        JQQmlImageInformationHead imageInformationHead;
 
         if ( preloadCacheDatas_.contains( jqicFilePath ) )
         {
             // 有匹配的预加载数据，直接使用预加载数据
 
             const auto &preloadCacheData = preloadCacheDatas_[ jqicFilePath ];
-            auto mutex = preloadCacheData.mutexForPreload_;
+            auto mutex = preloadCacheData.preloadMutex_;
             if ( mutex )
             {
                 // 如果已经进入了预加载列表但是实际上没有读取完，那么进行等待
@@ -86,17 +57,7 @@ public:
                 mutex->unlock();
             }
 
-            memcpy( &imageInformationHead, preloadCacheData.headData.constData(), sizeof( JQQmlImageInformationHead ) );
-
-            buffer_ = preloadCacheData.imageData;
-            image_ = QImage(
-                        reinterpret_cast< const uchar * >( buffer_.constData() ),
-                        imageInformationHead.imageWidth,
-                        imageInformationHead.imageHeight,
-                        static_cast< QImage::Format >( imageInformationHead.imageFormat )
-                    );
-
-            JQQmlImageManage::jqQmlImageManage()->recordImageFilePath( imageFilePath );
+            image_ = preloadCacheData.image;
         }
         else if ( jqicFile.exists() &&
                 ( jqicFile.size() >= static_cast< qint64 >( sizeof( JQQmlImageInformationHead ) ) ) )
@@ -109,28 +70,21 @@ public:
                 return;
             }
 
-            jqicFile.read( reinterpret_cast< char * >( &imageInformationHead ), sizeof( JQQmlImageInformationHead ) );
+            JQQmlImageInformationHead imageInformationHead;
+            jqicFile.read( reinterpret_cast< char * >( &imageInformationHead ), sizeof( imageInformationHead ) );
+            const auto &&imageData = jqicFile.readAll();
 
-            buffer_ = jqicFile.readAll();
-            image_ = QImage(
-                        reinterpret_cast< const uchar * >( buffer_.constData() ),
-                        imageInformationHead.imageWidth,
-                        imageInformationHead.imageHeight,
-                        static_cast< QImage::Format >( imageInformationHead.imageFormat )
-                    );
-            image_.setColorCount( imageInformationHead.imageColorCount );
-
-            JQQmlImageManage::jqQmlImageManage()->recordImageFilePath( imageFilePath );
+            image_ = JQQmlImageManage::jqicDataToImage( imageInformationHead, imageData );
         }
         else
         {
             // 在本地没有发现图片缓存，那么重新加载图片
 
-            QTime timeForLoad;
+            QTime loadTimer;
 
-            timeForLoad.start();
+            loadTimer.start();
             image_.load( imageFilePath );
-            const auto &&loadElapsed = timeForLoad.elapsed();
+            const auto &&loadElapsed = loadTimer.elapsed();
 
             if ( image_.isNull() )
             {
@@ -138,58 +92,26 @@ public:
                 return;
             }
 
+            // 若关闭了缓存功能，则不进行缓存
+            if ( !JQQmlImageManage::enableCacheFeature() ) { return; }
+
+            // 若缓存目录不可写，则不进行缓存
+            if ( !JQQmlImageManage::cachePathIsWritable() ) { return; }
+
             // 加载很快的图片不进行缓存
             if ( loadElapsed < 3 ) { return; }
 
             // 内容过少的图片不进行缓存
             if ( image_.byteCount() <= ( 30 * 30 * 4 ) ) { return; }
 
-            if ( ( image_.format() == QImage::Format_Mono ) ||
-                 ( image_.format() == QImage::Format_Indexed8 ))
-            {
-                if ( image_.hasAlphaChannel() )
-                {
-                    image_ = image_.convertToFormat( QImage::Format_ARGB32 );
-                }
-                else
-                {
-                    image_ = image_.convertToFormat( QImage::Format_RGB888 );
-                }
-            }
-
-            imageInformationHead.imageWidth = image_.width();
-            imageInformationHead.imageHeight = image_.height();
-            imageInformationHead.imageFormat = image_.format();
-            imageInformationHead.imageColorCount = image_.colorCount();
-
-            const auto &&headData = QByteArray( reinterpret_cast< const char * >( &imageInformationHead ), sizeof( JQQmlImageInformationHead ) );
-            const auto &&imageData = QByteArray( reinterpret_cast< const char * >( image_.constBits() ), image_.byteCount() );
+            auto jqicData = JQQmlImageManage::imageToJqicData( image_ );
+            const auto &&headData = QByteArray( reinterpret_cast< const char * >( &jqicData.first ), sizeof( jqicData.first ) );
 
             // 到新线程去存储缓存文件，不影响主线程
-            QtConcurrent::run(
-                        [
-                            jqicFilePath,
-                            headData,
-                            imageData
-                        ]()
-            {
-                QFile jqicFile( jqicFilePath );
-
-                if ( !jqicFile.open( QIODevice::WriteOnly ) )
-                {
-                    qDebug() << "JQQmlImageTextureFactory: open file error:" << jqicFilePath;
-                    return;
-                }
-                jqicFile.resize( headData.size() + imageData.size() );
-
-                jqicFile.write( headData );
-                jqicFile.write( imageData );
-
-                jqicFile.waitForBytesWritten( 30 * 1000 );
-            } );
-
-            JQQmlImageManage::jqQmlImageManage()->recordImageFilePath( imageFilePath );
+            QtConcurrent::run( std::bind( &JQQmlImageTextureFactory::saveToFile, this, jqicFilePath, headData, jqicData.second ) );
         }
+
+        JQQmlImageManage::jqQmlImageManage()->recordImageFilePath( imageFilePath );
     }
 
     ~JQQmlImageTextureFactory() = default;
@@ -216,8 +138,8 @@ public:
         if ( preloadCacheDatas_.contains( jqicFilePath ) ) { return false; }
 
         auto &preloadCacheData = preloadCacheDatas_[ jqicFilePath ];
-        preloadCacheData.mutexForPreload_.reset( new QMutex );
-        preloadCacheData.mutexForPreload_->lock();
+        preloadCacheData.preloadMutex_.reset( new QMutex );
+        preloadCacheData.preloadMutex_->lock();
 
         // 到新线程去加载，不影响主线程
         QtConcurrent::run(
@@ -230,8 +152,8 @@ public:
 
             if ( !jqicFile.exists() || ( jqicFile.size() < static_cast< qint64 >( sizeof( JQQmlImageInformationHead ) ) ) )
             {
-                preloadCacheData.mutexForPreload_->unlock();
-                preloadCacheData.mutexForPreload_.clear();
+                preloadCacheData.preloadMutex_->unlock();
+                preloadCacheData.preloadMutex_.clear();
                 return;
             }
 
@@ -239,31 +161,138 @@ public:
             {
                 qDebug() << "open file error:" << jqicFilePath;
 
-                preloadCacheData.mutexForPreload_->unlock();
-                preloadCacheData.mutexForPreload_.clear();
+                preloadCacheData.preloadMutex_->unlock();
+                preloadCacheData.preloadMutex_.clear();
 
                 return;
             }
 
-            preloadCacheData.headData = jqicFile.read( sizeof( JQQmlImageInformationHead ) );
-            preloadCacheData.imageData = jqicFile.readAll();
+            JQQmlImageInformationHead imageInformationHead;
+            jqicFile.read( reinterpret_cast< char * >( &imageInformationHead ), sizeof( imageInformationHead ) );
+            const auto &&imageData = jqicFile.readAll();
 
-            preloadCacheData.mutexForPreload_->unlock();
-            preloadCacheData.mutexForPreload_.clear();
+            preloadCacheData.image = JQQmlImageManage::jqicDataToImage( imageInformationHead, imageData );
+
+            preloadCacheData.preloadMutex_->unlock();
+            preloadCacheData.preloadMutex_.clear();
         } );
 
         return true;
     }
 
+    QString analysisFilePath(const QString &id)
+    {
+        if ( id.isEmpty() ) { return { }; }
+
+        QString result = id;
+
+        if ( !id.startsWith( ":/" ) )
+        {
+            if ( id.startsWith( "qrc:/" ) )
+            {
+                result = ":/";
+                result += id.mid( 5 );
+            }
+            else if ( id.startsWith( "file:/" ) )
+            {
+                result = QUrl( id ).toLocalFile();
+            }
+            else
+            {
+                qDebug() << "JQQmlImageTextureFactory: id error(1):" << id;
+                return { };
+            }
+        }
+
+        if ( result.isEmpty() )
+        {
+            qDebug() << "JQQmlImageTextureFactory: id error(2):" << id;
+            return { };
+        }
+
+        QFileInfo imageFileInfo( result );
+        if ( !imageFileInfo.exists() ) { return { }; }
+
+        // 根据设备像素比匹配特化的图片
+        const auto &&devicePixelRatio = JQQmlImageManage::jqQmlImageManage()->devicePixelRatio();
+        if ( qAbs( devicePixelRatio - 1 ) > 0.1 )
+        {
+            const auto &&resolutionOptimizatImageFilePath = QString( "%1/%2@%3x.%4" ).arg( imageFileInfo.path(), imageFileInfo.baseName(), QString::number( devicePixelRatio ), imageFileInfo.completeSuffix() );
+
+            if ( QFile::exists( resolutionOptimizatImageFilePath ) )
+            {
+                return resolutionOptimizatImageFilePath;
+            }
+        }
+
+        // 根据选择器匹配特化的图片
+        const auto &&extraSelectors = JQQmlImageManage::jqQmlImageManage()->extraSelectors();
+        if ( !extraSelectors.isEmpty() )
+        {
+            for ( const auto &extraSelector: extraSelectors )
+            {
+                const auto &&extraSelectorPath = QString( "%1/+%2" ).arg( imageFileInfo.path(), extraSelector );
+
+                mutex_.lock();
+
+                bool pathExists = false;
+
+                auto it = extraSelectorPathExist_.find( extraSelectorPath );
+                if ( it == extraSelectorPathExist_.end() )
+                {
+                    pathExists = QFile::exists( extraSelectorPath );
+                    extraSelectorPathExist_[ extraSelectorPath ] = pathExists;
+                }
+                else
+                {
+                    pathExists = it.value();
+                }
+
+                mutex_.unlock();
+
+                if ( !pathExists ) { continue; }
+
+                const auto &&extraSelectorImageFilePath = QString( "%1/%2" ).arg( extraSelectorPath, imageFileInfo.fileName() );
+
+                if ( QFile::exists( extraSelectorImageFilePath ) )
+                {
+                    return extraSelectorImageFilePath;
+                }
+            }
+        }
+
+        return result;
+    }
+
+    void saveToFile(const QString &jqicFilePath, const QByteArray &headData, const QByteArray &imageData)
+    {
+        QFile jqicFile( jqicFilePath );
+
+        if ( !jqicFile.open( QIODevice::WriteOnly ) )
+        {
+            qDebug() << "JQQmlImageTextureFactory: open file error:" << jqicFilePath;
+            return;
+        }
+        jqicFile.resize( headData.size() + imageData.size() );
+
+        jqicFile.write( headData );
+        jqicFile.write( imageData );
+
+        jqicFile.waitForBytesWritten( 30 * 1000 );
+    }
+
 private:
     static QMap< QString, PreloadCacheData > preloadCacheDatas_; // jqicFilePath -> PreloadCacheData; 预读取数据的容器
+    static QMap< QString, bool > extraSelectorPathExist_; // path -> exist
+    static QMutex mutex_;
 
     QString id_;
     QImage image_;
-    QByteArray buffer_;
 };
 
 QMap< QString, PreloadCacheData > JQQmlImageTextureFactory::preloadCacheDatas_;
+QMap< QString, bool > JQQmlImageTextureFactory::extraSelectorPathExist_; // path -> exist
+QMutex JQQmlImageTextureFactory::mutex_;
 
 // JQQmlImageImageProvider
 class JQQmlImageImageProvider: public QQuickImageProvider
@@ -286,9 +315,14 @@ QPointer< QQmlApplicationEngine > JQQmlImageManage::qmlApplicationEngine_;
 QPointer< QQuickView > JQQmlImageManage::quickView_;
 QPointer< JQQmlImageManage > JQQmlImageManage::jqQmlImageManage_;
 
+bool JQQmlImageManage::enableCacheFeature_ = true;
+bool JQQmlImageManage::cachePathIsWritable_ = false;
+qreal JQQmlImageManage::devicePixelRatio_ = 1;
+QStringList JQQmlImageManage::extraSelectors_;
+
 JQQmlImageManage::JQQmlImageManage():
-    mutexForAutoPreloadImage_( new QMutex ),
-    listForAutoPreloadImage_( new QStringList )
+    preloadImageMutex_( new QMutex ),
+    autoPreloadImageFilePathList_( new QStringList )
 {
     jqQmlImageManage_ = this;
 
@@ -310,21 +344,23 @@ JQQmlImageManage::~JQQmlImageManage()
 {
     jqQmlImageManage_ = nullptr;
 
-    mutexForAutoPreloadImage_->lock();
-    saveAutoPreloadImageFileListToFile( *listForAutoPreloadImage_ );
-    mutexForAutoPreloadImage_->unlock();
+    preloadImageMutex_->lock();
+    saveAutoPreloadImageFileListToFile( *autoPreloadImageFilePathList_ );
+    preloadImageMutex_->unlock();
 }
 
 void JQQmlImageManage::initialize(QQmlApplicationEngine *qmlApplicationEngine)
 {
     qmlApplicationEngine->addImportPath( ":/JQQmlImageQml/" );
     qmlApplicationEngine_ = qmlApplicationEngine;
+    refreshCachePathIsWritable();
 }
 
 void JQQmlImageManage::initialize(QQuickView *quickView)
 {
     quickView->engine()->addImportPath( ":/JQQmlImageQml/" );
     quickView_ = quickView;
+    refreshCachePathIsWritable();
 }
 
 bool JQQmlImageManage::preload(const QString &imageFilePath)
@@ -455,8 +491,6 @@ QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData
                     }
         );
 
-//        qDebug() << rgbCountVector;
-
         if ( ( rgbCountVector.size() >= 1 ) &&
            ( ( static_cast< double >( rgbCountVector[ 0 ].second ) / static_cast< double >( image.width() * image.height() ) ) > 0.1 ) )
         {
@@ -470,10 +504,13 @@ QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData
             result.first.imageHaveSecondPrimaryColor = true;
             result.first.imageSecondPrimaryColor = rgbCountVector[ 1 ].first;
         }
-    }
 
-//    qDebug() << "result.first.imageHaveBackgroundColor:" << result.first.imageHaveBackgroundColor;
-//    qDebug() << "result.first.imageHavePrimaryColor:" << result.first.imageHavePrimaryColor;
+//        qDebug() << rgbCountVector;
+//        qDebug() << "rgbCountVector[ 0 ].second:" << rgbCountVector[ 0 ].second;
+//        qDebug() << "result.first.imageHaveFirstPrimaryColor:" << result.first.imageHaveFirstPrimaryColor;
+//        qDebug() << "rgbCountVector[ 1 ].second:" << rgbCountVector[ 1 ].second;
+//        qDebug() << "result.first.imageHaveSecondPrimaryColor:" << result.first.imageHaveSecondPrimaryColor;
+    }
 
     QByteArray backgroundColorByteArray;
     QByteArray primaryColorByteArray;
@@ -489,7 +526,7 @@ QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData
         {
             const auto &&currentColor = image.pixelColor( colorIndex % image.width(), colorIndex / image.width() );
 
-            if ( result.first.imageHaveFirstPrimaryColor && ( currentColor == uint32ToColor( result.first.imageFirstPrimaryColor ) ) && ( sameColorDetector( image, colorIndex, result.first.byteIsOrdered ) > 8 ) )
+            if ( result.first.imageHaveFirstPrimaryColor && ( currentColor == uint32ToColor( result.first.imageFirstPrimaryColor ) ) && ( sameColorDetector( image, colorIndex, result.first.byteIsOrdered ) > 20 ) )
             {
                 if ( argbSegment.first != -1 )
                 {
@@ -511,7 +548,7 @@ QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData
 
                 colorIndex += sameColorCount;
             }
-            else if ( result.first.imageHaveSecondPrimaryColor && ( currentColor == uint32ToColor( result.first.imageSecondPrimaryColor ) ) && ( sameColorDetector( image, colorIndex, result.first.byteIsOrdered ) > 8 ) )
+            else if ( result.first.imageHaveSecondPrimaryColor && ( currentColor == uint32ToColor( result.first.imageSecondPrimaryColor ) ) && ( sameColorDetector( image, colorIndex, result.first.byteIsOrdered ) > 20 ) )
             {
                 if ( argbSegment.first != -1 )
                 {
@@ -605,6 +642,12 @@ QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData
 
 QImage JQQmlImageManage::jqicDataToImage(const JQQmlImageInformationHead &head, const QByteArray &data)
 {
+    if ( !head.imageWidth || !head.imageHeight )
+    {
+        qDebug() << "JQQmlImageManage::jqicDataToImage: imageWidth or imageHeight error";
+        return { };
+    }
+
     QImage result( head.imageWidth, head.imageHeight, static_cast< QImage::Format >( head.imageFormat ) );
 
 #ifndef QT_NO_DEBUG
@@ -724,11 +767,16 @@ QImage JQQmlImageManage::jqicDataToImage(const JQQmlImageInformationHead &head, 
 
 void JQQmlImageManage::recordImageFilePath(const QString &imageFilePath)
 {
-    if ( listForAutoPreloadImage_->size() >= 10 ) { return; }
+    if ( autoPreloadImageFilePathList_->size() >= 20 ) { return; }
 
-    mutexForAutoPreloadImage_->lock();
-    listForAutoPreloadImage_->push_back( imageFilePath );
-    mutexForAutoPreloadImage_->unlock();
+    preloadImageMutex_->lock();
+    autoPreloadImageFilePathList_->push_back( imageFilePath );
+    preloadImageMutex_->unlock();
+}
+
+void JQQmlImageManage::refreshCachePathIsWritable()
+{
+    cachePathIsWritable_ = QFile( JQQmlImageManage::jqicPath() ).permissions() & QFileDevice::WriteUser;
 }
 
 qint32 JQQmlImageManage::sameColorDetector(const QImage &image, const qint32 &colorIndexStart, const bool &byteIsOrdered)
@@ -766,6 +814,8 @@ qint32 JQQmlImageManage::sameColorDetector(const QImage &image, const qint32 &co
 
 void JQQmlImageManage::saveAutoPreloadImageFileListToFile(const QStringList &imageFilePathList)
 {
+    if ( !cachePathIsWritable_ ) { return; }
+
     auto file = autoPreloadImageFile();
     if ( !file->open( QIODevice::WriteOnly ) )
     {

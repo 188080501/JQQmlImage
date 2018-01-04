@@ -19,7 +19,7 @@ Window {
             JQQmlImage {
                 width: 200
                 height: 200
-                cacheImageSource: "../testimages/test" + ( index + 1 ).toString() + ".png"
+                cacheImageSource: "../../../testimages/test" + ( index + 1 ).toString() + ".png"
                 cache: false
             }
         }
@@ -31,7 +31,7 @@ Window {
             JQQmlImage {
                 width: 200
                 height: 200
-                cacheImageSource: "../testimages/test" + ( index + 1 ).toString() + ".jpg"
+                cacheImageSource: "../../../testimages/test" + ( index + 1 ).toString() + ".jpg"
                 cache: false
             }
         }

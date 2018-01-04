@@ -39,10 +39,10 @@ void JQQmlImageBenchmark::decodeBenchmark()
     QTime time;
 
     time.start();
-//    for ( auto i = 0; i < ( ( imageRawData.size() < 1024 ) ? ( 40000 ) : ( 1000 ) ); ++i )
-//    {
-//        QImage().loadFromData( imageRawData );
-//    }
+    for ( auto i = 0; i < ( ( imageRawData.size() < 1024 ) ? ( 40000 ) : ( 1000 ) ); ++i )
+    {
+        QImage().loadFromData( imageRawData );
+    }
     const auto &&pngDecodeTime = time.elapsed();
 
     const auto &&jqicData = JQQmlImageManage::imageToJqicData( QImage( imageFilePath ) );
@@ -57,7 +57,7 @@ void JQQmlImageBenchmark::decodeBenchmark()
     qDebug() << "PNG/JPG(time):" << pngDecodeTime;
     qDebug() << "JQImage(time):" << jqimageDecodeTime;
     qDebug() << "PNG/JPG(size):" << imageRawData.size();
-    qDebug() << "JQImage(size):" << sizeof( jqicData.first ) + jqicData.second.size();
+    qDebug() << "JQImage(size):" << static_cast< int >( sizeof( jqicData.first ) ) + jqicData.second.size();
 
     if ( !pngDecodeTime )
     {
@@ -70,7 +70,7 @@ void JQQmlImageBenchmark::decodeBenchmark()
     }
 
     const auto &&decodeTimeResult = static_cast< double >( jqimageDecodeTime ) / static_cast< double >( pngDecodeTime );
-    const auto &&decodeSizeResult = static_cast< double >( sizeof( jqicData.first ) + jqicData.second.size() ) / static_cast< double >( imageRawData.size() );
+    const auto &&decodeSizeResult = static_cast< double >( static_cast< int >( sizeof( jqicData.first ) ) + jqicData.second.size() ) / static_cast< double >( imageRawData.size() );
 
     qDebug() << "Decode result(time):" << QString( "%1.%2%" ).arg( static_cast< int >( decodeTimeResult * 100 ) ).arg( static_cast< int >( decodeTimeResult * 1000 ) % 10 );
     qDebug() << "Decode result(size):" << QString( "%1.%2%" ).arg( static_cast< int >( decodeSizeResult * 100 ) ).arg( static_cast< int >( decodeSizeResult * 1000 ) % 10 );
@@ -82,44 +82,44 @@ void JQQmlImageBenchmark::decodeBenchmark_data()
 {
     QTest::addColumn< QString >( "imageFilePath" );
 
-//    QTest::newRow( "test1.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test1.png" );
-//    QTest::newRow( "test1.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test1.jpg" );
-//    QTest::newRow( "test2.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test2.png" );
-//    QTest::newRow( "test2.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test2.jpg" );
-//    QTest::newRow( "test3.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test3.png" );
-//    QTest::newRow( "test3.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test3.jpg" );
-//    QTest::newRow( "test4.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test4.png" );
-//    QTest::newRow( "test4.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test4.jpg" );
+    QTest::newRow( "test1.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test1.png" );
+    QTest::newRow( "test1.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test1.jpg" );
+    QTest::newRow( "test2.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test2.png" );
+    QTest::newRow( "test2.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test2.jpg" );
+    QTest::newRow( "test3.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test3.png" );
+    QTest::newRow( "test3.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test3.jpg" );
+    QTest::newRow( "test4.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test4.png" );
+    QTest::newRow( "test4.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test4.jpg" );
     QTest::newRow( "test5.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test5.png" );
     QTest::newRow( "test6.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test6.png" );
     QTest::newRow( "test7.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test7.png" );
-//    QTest::newRow( "test8.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test8.png" );
+    QTest::newRow( "test8.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test8.png" );
     QTest::newRow( "test9.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test9.png" );
-//    QTest::newRow( "test10.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test10.png" );
-//    QTest::newRow( "test11.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test11.jpg" );
-    QTest::newRow( "test12.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test12.png" );
-//    QTest::newRow( "test13.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test13.png" );
-    QTest::newRow( "test14.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test14.png" );
-//    QTest::newRow( "test15.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test15.png" );
-//    QTest::newRow( "test16.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test16.png" );
-//    QTest::newRow( "test17.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test17.png" );
-//    QTest::newRow( "test18.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test18.jpg" );
-//    QTest::newRow( "test19.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test19.jpg" );
-//    QTest::newRow( "test20.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test20.png" );
-//    QTest::newRow( "test21.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test21.png" );
-//    QTest::newRow( "test22.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test22.png" );
-//    QTest::newRow( "test23.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test23.png" );
-    QTest::newRow( "test24.1.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test24.1.png" );
-    QTest::newRow( "test24.2.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test24.2.png" );
-    QTest::newRow( "test24.3.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test24.3.png" );
-    QTest::newRow( "test24.4.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test24.4.png" );
-//    QTest::newRow( "test25.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test25.png" );
-//    QTest::newRow( "test26.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test26.png" );
-//    QTest::newRow( "test27.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test27.png" );
-//    QTest::newRow( "test28.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test28.png" );
-//    QTest::newRow( "test29.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test29.jpg" );
-//    QTest::newRow( "test30.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test30.png" );
-//    QTest::newRow( "test31.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test31.png" );
-//    QTest::newRow( "test32.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test32.png" );
-//    QTest::newRow( "test33.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test33.png" );
+    QTest::newRow( "test10.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test10.png" );
+    QTest::newRow( "test11.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test11.jpg" );
+    QTest::newRow( "test12.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test12.png" ); // !
+    QTest::newRow( "test13.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test13.png" );
+    QTest::newRow( "test14.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test14.png" ); // !
+    QTest::newRow( "test15.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test15.png" );
+    QTest::newRow( "test16.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test16.png" );
+    QTest::newRow( "test17.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test17.png" );
+    QTest::newRow( "test18.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test18.jpg" );
+    QTest::newRow( "test19.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test19.jpg" );
+    QTest::newRow( "test20.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test20.png" );
+    QTest::newRow( "test21.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test21.png" );
+    QTest::newRow( "test22.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test22.png" );
+    QTest::newRow( "test23.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test23.png" );
+    QTest::newRow( "test24.1.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test24.1.png" ); // !
+    QTest::newRow( "test24.2.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test24.2.png" ); // !
+    QTest::newRow( "test24.3.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test24.3.png" ); // !
+    QTest::newRow( "test24.4.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test24.4.png" ); // !
+    QTest::newRow( "test25.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test25.png" );
+    QTest::newRow( "test26.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test26.png" );
+    QTest::newRow( "test27.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test27.png" );
+    QTest::newRow( "test28.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test28.png" );
+    QTest::newRow( "test29.jpg" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test29.jpg" );
+    QTest::newRow( "test30.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test30.png" );
+    QTest::newRow( "test31.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test31.png" );
+    QTest::newRow( "test32.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test32.png" );
+    QTest::newRow( "test33.png" ) << QString( "%1/%2" ).arg( TESTIMAGES_PATH, "test33.png" );
 }

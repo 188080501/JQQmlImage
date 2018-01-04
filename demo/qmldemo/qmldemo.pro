@@ -32,3 +32,5 @@ RESOURCES += \
 
 OTHER_FILES += \
     $$PWD/qml/main2.qml
+
+DEFINES *= MAIN2_QML_PATH=\\\"$$PWD/qml\\\"
