@@ -1,7 +1,0 @@
-﻿#ifndef __JQQMLIMAGE_JQQMLIMAGE__
-#define __JQQMLIMAGE_JQQMLIMAGE__
-
-// JQQmlImage lib include
-#include <JQQmlImageManage>
-
-#endif//__JQQMLIMAGE_JQQMLIMAGE__

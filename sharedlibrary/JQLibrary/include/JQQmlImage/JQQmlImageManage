@@ -1,0 +1,10 @@
+﻿#ifndef JQQMLIMAGE_JQQMLIMAGEMANAGE_
+#define JQQMLIMAGE_JQQMLIMAGEMANAGE_
+
+// .h include
+#include "jqqmlimagemanage.h"
+
+#define JQQMLIMAGE_INITIALIZE( carrier ) \
+    JQQMLIMAGEMANAGE_INITIALIZE( carrier );
+
+#endif//JQQMLIMAGE_JQQMLIMAGEMANAGE_
