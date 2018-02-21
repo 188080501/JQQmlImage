@@ -780,6 +780,7 @@ void JQQmlImageManage::recordImageFilePath(const QString &imageFilePath)
 
 void JQQmlImageManage::refreshCachePathIsWritable()
 {
+    QDir().mkpath( JQQmlImageManage::jqicPath() );
     cachePathIsWritable_ = QFile( JQQmlImageManage::jqicPath() ).permissions() & QFileDevice::WriteUser;
 }
 
