@@ -114,19 +114,19 @@ public:
         JQQmlImageManage::jqQmlImageManage()->recordImageFilePath( imageFilePath );
     }
 
-    ~JQQmlImageTextureFactory() = default;
+    ~JQQmlImageTextureFactory() override = default;
 
-    QSGTexture *createTexture(QQuickWindow *window) const
+    QSGTexture *createTexture(QQuickWindow *window) const final
     {
         return window->createTextureFromImage( image_ );
     }
 
-    int textureByteCount() const
+    int textureByteCount() const final
     {
         return image_.byteCount();
     }
 
-    QSize textureSize() const
+    QSize textureSize() const final
     {
         return image_.size();
     }
@@ -191,7 +191,7 @@ public:
             if ( id.startsWith( "qrc:/" ) )
             {
                 result = ":/";
-                result += id.mid( 5 );
+                result += id.midRef( 5 );
             }
             else if ( id.startsWith( "file:/" ) )
             {
@@ -302,9 +302,9 @@ public:
         QQuickImageProvider( QQmlImageProviderBase::Texture )
     { }
 
-    ~JQQmlImageImageProvider() = default;
+    ~JQQmlImageImageProvider() override = default;
 
-    QQuickTextureFactory *requestTexture(const QString &id, QSize *, const QSize &)
+    QQuickTextureFactory *requestTexture(const QString &id, QSize *, const QSize &) final
     {
         return new JQQmlImageTextureFactory( id );
     }
@@ -404,7 +404,7 @@ QString JQQmlImageManage::jqicPath()
     }
 
     jqicPath_ = QString( "%1/jqqmlimagecache" ).arg( cacheLocation );
-    if ( !QFileInfo( jqicPath_ ).exists() )
+    if ( !QFileInfo::exists( jqicPath_ ) )
     {
         if ( !QDir().mkpath( jqicPath_ ) )
         {
@@ -457,7 +457,7 @@ QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData
     result.first.imageHeight = image.height();
     result.first.imageFormat = image.format();
     result.first.imageColorCount = image.colorCount();
-    result.first.byteIsOrdered = ( image.format() == QImage::Format_ARGB32 ) ? ( 4 ) : ( 3 ) * image.width() == image.bytesPerLine();
+    result.first.byteIsOrdered = ( ( ( image.format() == QImage::Format_ARGB32 ) ? ( 4 ) : ( 3 ) ) * image.width() ) == image.bytesPerLine();
 
 //    qDebug() << "result.first.byteIsOrdered:" << result.first.byteIsOrdered;
 
@@ -656,7 +656,7 @@ QImage JQQmlImageManage::jqicDataToImage(const JQQmlImageInformationHead &head, 
 
 #ifndef QT_NO_DEBUG
     // debug模式填充紫色，防止内存中垃圾数据污染
-    result.fill( QColor( "#ff00ff" ) );
+    result.fill( QColor( 255, 0, 255 ) );
 #endif
 
     auto dataIndex = 0;
