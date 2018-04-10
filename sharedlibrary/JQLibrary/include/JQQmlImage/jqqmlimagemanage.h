@@ -27,7 +27,7 @@
 
 #define JQQMLIMAGEMANAGE_INITIALIZE( carrier ) \
     qmlRegisterType< JQQmlImageManage >( "JQQmlImageManage", 1, 0, "JQQmlImageManage" ); \
-    JQQmlImageManage::initialize( &carrier ); \
+    JQQmlImageManage::initialize( &( carrier ) ); \
     JQQmlImageManage::autoPreload();
 
 #define JQQMLIMAGE_VERSION "1.1"
@@ -62,12 +62,12 @@ class JQQmlImageManage: public QObject
 {
     Q_OBJECT
     Q_DISABLE_COPY( JQQmlImageManage )
-    Q_PROPERTY( qreal devicePixelRatio READ devicePixelRatio WRITE setDevicePixelRatio )
+    Q_PROPERTY( qreal devicePixelRatio READ devicePixelRatio WRITE setDevicePixelRatio NOTIFY devicePixelRatioChanged )
 
 public:
     JQQmlImageManage();
 
-    ~JQQmlImageManage();
+    ~JQQmlImageManage() override;
 
     inline static QPointer< JQQmlImageManage > jqQmlImageManage();
 
@@ -84,6 +84,8 @@ public:
     static inline QStringList extraSelectors();
 
     static inline void setExtraSelectors(const QStringList &newValue);
+
+    static inline void setJqicPath(const QString &newValue);
 
 
     static void initialize(QQmlApplicationEngine *qmlApplicationEngine);
@@ -123,6 +125,9 @@ private:
 
     static QSharedPointer< QFile > autoPreloadImageFile();
 
+signals:
+    void devicePixelRatioChanged(const qreal devicePixelRatio);
+
 private:
     static QPointer< QQmlApplicationEngine > qmlApplicationEngine_;
     static QPointer< QQuickView > quickView_;
@@ -132,6 +137,7 @@ private:
     static bool cachePathIsWritable_;
     static qreal devicePixelRatio_;
     static QStringList extraSelectors_;
+    static QString jqicPath_;
 
     QSharedPointer< QMutex > preloadImageMutex_;
     QSharedPointer< QStringList > autoPreloadImageFilePathList_;

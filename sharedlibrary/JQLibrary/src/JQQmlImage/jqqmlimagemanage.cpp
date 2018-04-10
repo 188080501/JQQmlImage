@@ -114,19 +114,19 @@ public:
         JQQmlImageManage::jqQmlImageManage()->recordImageFilePath( imageFilePath );
     }
 
-    ~JQQmlImageTextureFactory() = default;
+    ~JQQmlImageTextureFactory() override = default;
 
-    QSGTexture *createTexture(QQuickWindow *window) const
+    QSGTexture *createTexture(QQuickWindow *window) const final
     {
         return window->createTextureFromImage( image_ );
     }
 
-    int textureByteCount() const
+    int textureByteCount() const final
     {
         return image_.byteCount();
     }
 
-    QSize textureSize() const
+    QSize textureSize() const final
     {
         return image_.size();
     }
@@ -191,7 +191,7 @@ public:
             if ( id.startsWith( "qrc:/" ) )
             {
                 result = ":/";
-                result += id.mid( 5 );
+                result += id.midRef( 5 );
             }
             else if ( id.startsWith( "file:/" ) )
             {
@@ -302,9 +302,9 @@ public:
         QQuickImageProvider( QQmlImageProviderBase::Texture )
     { }
 
-    ~JQQmlImageImageProvider() = default;
+    ~JQQmlImageImageProvider() override = default;
 
-    QQuickTextureFactory *requestTexture(const QString &id, QSize *, const QSize &)
+    QQuickTextureFactory *requestTexture(const QString &id, QSize *, const QSize &) final
     {
         return new JQQmlImageTextureFactory( id );
     }
@@ -319,6 +319,7 @@ bool JQQmlImageManage::enableCacheFeature_ = true;
 bool JQQmlImageManage::cachePathIsWritable_ = false;
 qreal JQQmlImageManage::devicePixelRatio_ = 1;
 QStringList JQQmlImageManage::extraSelectors_;
+QString JQQmlImageManage::jqicPath_;
 
 JQQmlImageManage::JQQmlImageManage():
     preloadImageMutex_( new QMutex ),
@@ -354,6 +355,7 @@ void JQQmlImageManage::initialize(QQmlApplicationEngine *qmlApplicationEngine)
     qmlApplicationEngine->addImportPath( ":/JQQmlImageQml/" );
     qmlApplicationEngine_ = qmlApplicationEngine;
     refreshCachePathIsWritable();
+    jqicPath();
 }
 
 void JQQmlImageManage::initialize(QQuickView *quickView)
@@ -361,6 +363,7 @@ void JQQmlImageManage::initialize(QQuickView *quickView)
     quickView->engine()->addImportPath( ":/JQQmlImageQml/" );
     quickView_ = quickView;
     refreshCachePathIsWritable();
+    jqicPath();
 }
 
 bool JQQmlImageManage::preload(const QString &imageFilePath)
@@ -385,6 +388,8 @@ bool JQQmlImageManage::clearAllCache()
 
 QString JQQmlImageManage::jqicPath()
 {
+    if ( !jqicPath_.isEmpty() ) { return jqicPath_; }
+
     if ( !qApp )
     {
         qDebug() << "JQQmlImageManage: qApp is null";
@@ -398,17 +403,17 @@ QString JQQmlImageManage::jqicPath()
         return { };
     }
 
-    const auto &&buf = QString( "%1/jqqmlimagecache" ).arg( cacheLocation );
-    if ( !QFileInfo( buf ).exists() )
+    jqicPath_ = QString( "%1/jqqmlimagecache" ).arg( cacheLocation );
+    if ( !QFileInfo::exists( jqicPath_ ) )
     {
-        if ( !QDir().mkpath( buf ) )
+        if ( !QDir().mkpath( jqicPath_ ) )
         {
-            qDebug() << "JQQmlImageManage: mkpath error:" << buf;
+            qDebug() << "JQQmlImageManage: mkpath error:" << jqicPath_;
             return { };
         }
     }
 
-    return buf;
+    return jqicPath_;
 }
 
 QString JQQmlImageManage::jqicFilePath(const QString &imageFilePath)
@@ -424,8 +429,7 @@ QString JQQmlImageManage::jqicFilePath(const QString &imageFilePath)
 
     const auto &&md5String = QCryptographicHash::hash( sumString, QCryptographicHash::Md5 ).toHex();
 
-    return QString( "%1/jqqmlimagecache/%2.jqic" ).
-            arg( QStandardPaths::writableLocation( QStandardPaths::CacheLocation ), md5String.constData() );
+    return QString( "%1/%2.jqic" ).arg( jqicPath(), md5String.constData() );
 }
 
 QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData(const QImage &image)
@@ -453,7 +457,7 @@ QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData
     result.first.imageHeight = image.height();
     result.first.imageFormat = image.format();
     result.first.imageColorCount = image.colorCount();
-    result.first.byteIsOrdered = ( image.format() == QImage::Format_ARGB32 ) ? ( 4 ) : ( 3 ) * image.width() == image.bytesPerLine();
+    result.first.byteIsOrdered = ( ( ( image.format() == QImage::Format_ARGB32 ) ? ( 4 ) : ( 3 ) ) * image.width() ) == image.bytesPerLine();
 
 //    qDebug() << "result.first.byteIsOrdered:" << result.first.byteIsOrdered;
 
@@ -652,7 +656,7 @@ QImage JQQmlImageManage::jqicDataToImage(const JQQmlImageInformationHead &head, 
 
 #ifndef QT_NO_DEBUG
     // debug模式填充紫色，防止内存中垃圾数据污染
-    result.fill( QColor( "#ff00ff" ) );
+    result.fill( QColor( 255, 0, 255 ) );
 #endif
 
     auto dataIndex = 0;
@@ -776,6 +780,7 @@ void JQQmlImageManage::recordImageFilePath(const QString &imageFilePath)
 
 void JQQmlImageManage::refreshCachePathIsWritable()
 {
+    QDir().mkpath( JQQmlImageManage::jqicPath() );
     cachePathIsWritable_ = QFile( JQQmlImageManage::jqicPath() ).permissions() & QFileDevice::WriteUser;
 }
 

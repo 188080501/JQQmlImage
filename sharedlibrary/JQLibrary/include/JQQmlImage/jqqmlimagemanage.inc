@@ -61,14 +61,19 @@ inline void JQQmlImageManage::setExtraSelectors(const QStringList &newValue)
     extraSelectors_ = newValue;
 }
 
+inline void JQQmlImageManage::setJqicPath(const QString &newValue)
+{
+    jqicPath_ = newValue;
+}
+
 inline QColor JQQmlImageManage::uint32ToColor(const quint32 &color)
 {
-    return QColor(
+    return {
                 *( reinterpret_cast< const quint8 * >( &color ) + 0 ),
                 *( reinterpret_cast< const quint8 * >( &color ) + 1 ),
                 *( reinterpret_cast< const quint8 * >( &color ) + 2 ),
                 *( reinterpret_cast< const quint8 * >( &color ) + 3 )
-                );
+            };
 }
 
 inline quint32 JQQmlImageManage::colorToUint32(const QColor &color)
