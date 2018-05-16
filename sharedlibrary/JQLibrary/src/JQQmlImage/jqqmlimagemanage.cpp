@@ -41,6 +41,12 @@ public:
         if ( imageFilePath.isEmpty() ) { return; }
 
         const auto &&jqicFilePath = JQQmlImageManage::jqicFilePath( imageFilePath );
+        if ( jqicFilePath.size() < 3 )
+        {
+            qDebug() << "JQQmlImageTextureFactory: jqicFilePath error:" << jqicFilePath;
+            return;
+        }
+
         QFile jqicFile( jqicFilePath );
 
         if ( preloadCacheDatas_.contains( jqicFilePath ) )
@@ -75,6 +81,12 @@ public:
             const auto &&imageData = jqicFile.readAll();
 
             image_ = JQQmlImageManage::jqicDataToImage( imageInformationHead, imageData );
+            if ( image_.isNull() )
+            {
+                qDebug() << "JQQmlImageTextureFactory: jqic error:" << id << ", remove:" << jqicFile.remove();
+            }
+
+            image_.load( imageFilePath );
         }
         else
         {
@@ -108,7 +120,12 @@ public:
             const auto &&headData = QByteArray( reinterpret_cast< const char * >( &jqicData.first ), sizeof( jqicData.first ) );
 
             // 到新线程去存储缓存文件，不影响主线程
-            QtConcurrent::run( std::bind( &JQQmlImageTextureFactory::saveToFile, this, jqicFilePath, headData, jqicData.second ) );
+            QtConcurrent::run( [ jqicFilePath, image = image_ ]()
+            {
+                auto vicData = JQQmlImageManage::imageToJqicData( image );
+                const auto &&headData = QByteArray( reinterpret_cast< const char * >( &vicData.first ), sizeof( vicData.first ) );
+                saveToFile( jqicFilePath, headData, vicData.second );
+            } );
         }
 
         JQQmlImageManage::jqQmlImageManage()->recordImageFilePath( imageFilePath );
@@ -264,7 +281,7 @@ public:
         return result;
     }
 
-    void saveToFile(const QString &jqicFilePath, const QByteArray &headData, const QByteArray &imageData)
+    static void saveToFile(const QString &jqicFilePath, const QByteArray &headData, const QByteArray &imageData)
     {
         QFile jqicFile( jqicFilePath );
 
