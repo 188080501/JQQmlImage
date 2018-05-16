@@ -116,15 +116,12 @@ public:
             // 内容过少的图片不进行缓存
             if ( image_.byteCount() <= ( 30 * 30 * 4 ) ) { return; }
 
-            auto jqicData = JQQmlImageManage::imageToJqicData( image_ );
-            const auto &&headData = QByteArray( reinterpret_cast< const char * >( &jqicData.first ), sizeof( jqicData.first ) );
-
             // 到新线程去存储缓存文件，不影响主线程
             QtConcurrent::run( [ jqicFilePath, image = image_ ]()
             {
-                auto vicData = JQQmlImageManage::imageToJqicData( image );
-                const auto &&headData = QByteArray( reinterpret_cast< const char * >( &vicData.first ), sizeof( vicData.first ) );
-                saveToFile( jqicFilePath, headData, vicData.second );
+                auto jqicData = JQQmlImageManage::imageToJqicData( image );
+                const auto &&headData = QByteArray( reinterpret_cast< const char * >( &jqicData.first ), sizeof( jqicData.first ) );
+                saveToFile( jqicFilePath, headData, jqicData.second );
             } );
         }
 
