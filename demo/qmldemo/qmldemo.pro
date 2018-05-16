@@ -20,6 +20,7 @@ TEMPLATE = app
 QT += qml quick
 
 CONFIG += c++11
+CONFIG += c++14
 
 include( $$PWD/../../sharedlibrary/JQLibrary/JQQmlImage.pri )
 

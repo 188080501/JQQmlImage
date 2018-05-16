@@ -17,6 +17,9 @@
 
 QT += core testlib qml quick
 
+CONFIG += c++11
+CONFIG += c++14
+
 TEMPLATE = app
 
 include( $$PWD/../../sharedlibrary/JQLibrary/JQQmlImage.pri )
