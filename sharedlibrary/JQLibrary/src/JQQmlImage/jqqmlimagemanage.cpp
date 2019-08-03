@@ -85,8 +85,6 @@ public:
             {
                 qDebug() << "JQQmlImageTextureFactory: jqic error:" << id << ", remove:" << jqicFile.remove();
             }
-
-            image_.load( imageFilePath );
         }
         else
         {
