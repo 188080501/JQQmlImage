@@ -112,7 +112,7 @@ public:
             if ( loadElapsed < 3 ) { return; }
 
             // 内容过少的图片不进行缓存
-            if ( image_.byteCount() <= ( 30 * 30 * 4 ) ) { return; }
+            if ( image_.sizeInBytes() <= ( 30 * 30 * 4 ) ) { return; }
 
             // 到新线程去存储缓存文件，不影响主线程
             QtConcurrent::run( [ jqicFilePath, image = image_ ]()
@@ -135,7 +135,7 @@ public:
 
     int textureByteCount() const final
     {
-        return image_.byteCount();
+        return image_.sizeInBytes();
     }
 
     QSize textureSize() const final
@@ -629,7 +629,7 @@ QPair< JQQmlImageInformationHead, QByteArray > JQQmlImageManage::imageToJqicData
     else
     {
         // 如果没有背景色或者主要色，则提取全部颜色到 argbSegments
-        argbSegments.push_back( { 0, QByteArray( reinterpret_cast< const char * >( image.bits() ), image.byteCount() ) } );
+        argbSegments.push_back( { 0, QByteArray( reinterpret_cast< const char * >( image.bits() ), static_cast< int >( image.sizeInBytes() ) ) } );
     }
 
     result.second += backgroundColorByteArray;
