@@ -90,7 +90,7 @@ public:
         {
             // 在本地没有发现图片缓存，那么重新加载图片
 
-            QTime loadTimer;
+            QElapsedTimer loadTimer;
 
             loadTimer.start();
             image_.load( imageFilePath );
@@ -135,7 +135,7 @@ public:
 
     int textureByteCount() const final
     {
-        return image_.sizeInBytes();
+        return static_cast< int >( image_.sizeInBytes() );
     }
 
     QSize textureSize() const final
