@@ -21,17 +21,14 @@ INCLUDEPATH *= \
     $$PWD/include/JQQmlImage/
 
 HEADERS *= \
-    $$PWD/include/JQQmlImage/*.h \
-    $$PWD/include/JQQmlImage/*.inc
+    $$PWD/include/JQQmlImage/jqqmlimagemanage.h \
+    $$PWD/include/JQQmlImage/jqqmlimagemanage.inc
 
 SOURCES *= \
-    $$PWD/src/JQQmlImage/*.cpp
+    $$PWD/src/JQQmlImage/jqqmlimagemanage.cpp
 
 RESOURCES *= \
     $$PWD/qml/JQQmlImageQml.qrc
 
 QML_IMPORT_PATH *= \
     $$PWD/qml
-
-OTHER_FILES *= \
-    $$PWD/qml/JQQmlImage/*.qml
